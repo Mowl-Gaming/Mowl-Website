@@ -170,7 +170,7 @@
         }
 
         async function handleLogin() {
-            const storedHash = '129df68872b49b6b3e7215354922b9c792160ae526b71dc772655844af502b48'; // "mowladmin"
+            const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d';
             const enteredHash = await sha256(passwordInput.value);
 
             if (enteredHash === storedHash) {
