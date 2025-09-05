@@ -252,7 +252,7 @@
                     <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Ausstehende <span class="text-green-400">Spiele</span></h2>
                 </div>
                 <div id="upcoming-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                   <!-- Game cards will be dynamically inserted here -->
+                   <!-- Game cards will be dynamically inserted here from Firebase -->
                 </div>
                  <p id="no-upcoming-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine neuen Spiele angekündigt. Schau bald wieder vorbei!</p>
             </div>
@@ -370,13 +370,34 @@
 
             <h4 class="text-lg font-orbitron mt-8 mb-4 border-b border-green-800 pb-2">Aktuelle Spiele</h4>
             <div id="admin-games-list" class="space-y-2 max-h-60 overflow-y-auto">
-                <!-- Admin game list will be populated here -->
+                <!-- Admin game list will be populated here from Firebase -->
             </div>
         </div>
     </div>
 
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      
+        // --- WICHTIG: Deine Firebase Konfiguration hier einfügen! ---
+        // Ersetze das folgende Objekt mit dem, das du aus der Firebase Console kopiert hast.
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
+            authDomain: "mowl-website.firebaseapp.com",
+            projectId: "mowl-website",
+            storageBucket: "mowl-website.firebasestorage.app",
+            messagingSenderId: "181578753317",
+            appId: "1:181578753317:web:f44567dd561d8e7a37a6cc",
+            measurementId: "G-9F6YC5NLCS"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const gamesCollection = collection(db, "upcoming-games");
 
-    <script>
         document.addEventListener('DOMContentLoaded', () => {
 
             // --- Mobile Menu ---
@@ -444,50 +465,33 @@
             const addGameLoader = document.getElementById('add-game-loader');
             const adminGamesList = document.getElementById('admin-games-list');
             const adminErrorMsg = document.getElementById('admin-error-msg');
-
             const passwordModal = document.getElementById('password-modal');
             const closePasswordBtn = document.getElementById('close-password-btn');
             const passwordInput = document.getElementById('password-input');
             const passwordSubmitBtn = document.getElementById('password-submit-btn');
             const passwordErrorMsg = document.getElementById('password-error-msg');
-
-            const STORAGE_KEY = 'mowl_upcoming_games';
-
-            function getGamesFromStorage() {
-                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-            }
-
-            function saveGamesToStorage(games) {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(games));
-            }
             
+            let allGames = []; // Cache for all game data
+
             async function fetchSteamGameData(steamUrl) {
-                // Use a CORS proxy to fetch the Steam page HTML
                 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(steamUrl)}`;
                 try {
                     const response = await fetch(proxyUrl);
-                    if (!response.ok) {
-                        throw new Error(`Network response was not ok: ${response.statusText}`);
-                    }
+                    if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
                     const htmlText = await response.text();
-                    
-                    // Parse the HTML text into a document
                     const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-                    
-                    // Extract data from meta tags
                     const title = doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel';
                     const description = doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.';
                     const image = doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt';
-
                     return { title, description, image, url: steamUrl };
                 } catch (error) {
                     console.error("Failed to fetch Steam game data:", error);
-                    throw error; // Re-throw to be caught by the caller
+                    throw error;
                 }
             }
 
             function createGameCard(game) {
-                return `
+                 return `
                     <div class="card p-6 rounded-lg text-center" data-url="${game.url}">
                         <img src="${game.image}" alt="${game.title} Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
                         <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${game.title}</h3>
@@ -496,8 +500,8 @@
                     </div>
                 `;
             }
-            
-             function createLoadingPlaceholder() {
+
+            function createLoadingPlaceholder() {
                 return `
                     <div class="card p-6 rounded-lg text-center animate-pulse">
                         <div class="w-full h-48 bg-gray-800 rounded mb-4"></div>
@@ -511,22 +515,30 @@
                 `;
             }
 
+            // --- REALTIME LISTENER FROM FIREBASE ---
+            onSnapshot(gamesCollection, async (snapshot) => {
+                const gameDocs = snapshot.docs;
+                allGames = gameDocs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Update UI for both main page and admin panel
+                populateAdminList();
+                await loadUpcomingGames();
+            });
+            
             async function loadUpcomingGames() {
-                const games = getGamesFromStorage();
                 upcomingGamesGrid.innerHTML = '';
                 
-                if (games.length === 0) {
+                if (allGames.length === 0) {
                     noUpcomingGamesMsg.classList.remove('hidden');
                     return;
                 }
                 noUpcomingGamesMsg.classList.add('hidden');
                 
-                // Show placeholders
-                for (let i = 0; i < games.length; i++) {
+                for (let i = 0; i < allGames.length; i++) {
                      upcomingGamesGrid.innerHTML += createLoadingPlaceholder();
                 }
 
-                const gamePromises = games.map(url => fetchSteamGameData(url).catch(e => null));
+                const gamePromises = allGames.map(game => fetchSteamGameData(game.url).catch(e => null));
                 const gameDataArray = await Promise.all(gamePromises);
                 
                 upcomingGamesGrid.innerHTML = ''; // Clear placeholders
@@ -538,15 +550,14 @@
             }
 
             function populateAdminList() {
-                const games = getGamesFromStorage();
                 adminGamesList.innerHTML = '';
-                if (games.length > 0) {
-                    games.forEach(url => {
+                if (allGames.length > 0) {
+                    allGames.forEach(game => {
                         const gameDiv = document.createElement('div');
                         gameDiv.className = 'flex justify-between items-center bg-gray-900 p-2 rounded';
                         gameDiv.innerHTML = `
-                            <span class="text-sm truncate text-gray-400">${url}</span>
-                            <button data-url="${url}" class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>
+                            <span class="text-sm truncate text-gray-400">${game.url}</span>
+                            <button data-id="${game.id}" class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>
                         `;
                         adminGamesList.appendChild(gameDiv);
                     });
@@ -555,7 +566,7 @@
                 }
             }
 
-            // Event Listeners
+            // --- Event Listeners for Modals and Login ---
             adminLoginBtn.addEventListener('click', () => {
                 passwordInput.value = '';
                 passwordErrorMsg.textContent = '';
@@ -570,17 +581,13 @@
             passwordSubmitBtn.addEventListener('click', async () => {
                 const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d';
                 const enteredPassword = passwordInput.value;
-
                 if (!enteredPassword) {
                     passwordErrorMsg.textContent = 'Bitte Passwort eingeben.';
                     return;
                 }
-
                 const enteredHash = await sha256(enteredPassword);
-
                 if (enteredHash === storedHash) {
                     passwordModal.classList.remove('active');
-                    populateAdminList();
                     adminModal.classList.add('active');
                 } else {
                     passwordErrorMsg.textContent = 'Falsches Passwort.';
@@ -589,22 +596,14 @@
             });
             
             passwordInput.addEventListener('keyup', e => {
-                if (e.key === 'Enter') {
-                    passwordSubmitBtn.click();
-                }
+                if (e.key === 'Enter') passwordSubmitBtn.click();
             });
 
-            // --- Hashing Function ---
             async function sha256(message) {
-                // encode as UTF-8
-                const msgBuffer = new TextEncoder().encode(message);                    
-                // hash the message
+                const msgBuffer = new TextEncoder().encode(message);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-                // convert ArrayBuffer to Array
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
-                // convert bytes to hex string                  
-                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                return hashHex;
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             }
 
             closeAdminBtn.addEventListener('click', () => adminModal.classList.remove('active'));
@@ -612,6 +611,7 @@
                  if(e.target === adminModal) adminModal.classList.remove('active');
             });
 
+            // --- Admin Panel Actions ---
             addGameBtn.addEventListener('click', async () => {
                 const url = steamUrlInput.value.trim();
                 adminErrorMsg.textContent = '';
@@ -621,8 +621,7 @@
                     return;
                 }
                 
-                let games = getGamesFromStorage();
-                if (games.includes(url)) {
+                if (allGames.some(game => game.url === url)) {
                      adminErrorMsg.textContent = 'Dieses Spiel wurde bereits hinzugefügt.';
                      return;
                 }
@@ -632,12 +631,8 @@
                 addGameLoader.classList.remove('hidden');
 
                 try {
-                    // Test fetch before adding
-                    await fetchSteamGameData(url);
-                    games.push(url);
-                    saveGamesToStorage(games);
-                    populateAdminList();
-                    loadUpcomingGames(); // Refresh the main page list
+                    await fetchSteamGameData(url); // Test fetch before adding
+                    await addDoc(gamesCollection, { url: url }); // Add to Firebase
                     steamUrlInput.value = '';
                 } catch (error) {
                      adminErrorMsg.textContent = 'Spiel konnte nicht abgerufen werden. Überprüfe den Link.';
@@ -648,24 +643,18 @@
                 }
             });
 
-            adminGamesList.addEventListener('click', (e) => {
+            adminGamesList.addEventListener('click', async (e) => {
                 if (e.target.classList.contains('remove-game-btn')) {
-                    const urlToRemove = e.target.dataset.url;
-                    let games = getGamesFromStorage();
-                    games = games.filter(url => url !== urlToRemove);
-                    saveGamesToStorage(games);
-                    populateAdminList();
-                    loadUpcomingGames();
+                    const docIdToRemove = e.target.dataset.id;
+                    const q = query(gamesCollection, where('__name__', '==', docIdToRemove));
+                    const querySnapshot = await getDocs(q);
+                    querySnapshot.forEach((doc) => {
+                        deleteDoc(doc.ref);
+                    });
                 }
             });
-
-            // Initial load
-            loadUpcomingGames();
         });
     </script>
 </body>
 </html>
-
-
-
 
