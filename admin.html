@@ -170,7 +170,7 @@
         }
 
         async function handleLogin() {
-            const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d';
+            const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d'; // "mowladmin"
             const enteredHash = await sha256(passwordInput.value);
 
             if (enteredHash === storedHash) {
@@ -206,12 +206,17 @@
             const tags = new Set();
             doc.querySelectorAll('.app_tag').forEach(tagEl => {
                 const tag = tagEl.textContent.trim().toLowerCase();
-                if (tag.includes('co-op') || tag.includes('multiplayer')) tags.add('coop');
-                if (tag.includes('single-player')) tags.add('singleplayer');
+                // Check for English and German tags
+                if (tag.includes('co-op') || tag.includes('multiplayer') || tag.includes('mehrspieler') || tag.includes('ko-op')) {
+                    tags.add('coop');
+                }
+                if (tag.includes('single-player') || tag.includes('einzelspieler')) {
+                    tags.add('singleplayer');
+                }
             });
             
             const price = doc.querySelector('.game_purchase_price, .discount_final_price');
-            if (price && !price.textContent.toLowerCase().includes('free')) {
+            if (price && !price.textContent.toLowerCase().includes('free') && !price.textContent.toLowerCase().includes('kostenlos')) {
                 tags.add('not_free');
             }
             
