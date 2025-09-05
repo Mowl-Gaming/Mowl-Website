@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mowl - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glow-green: 0 0 5px rgba(74, 222, 128, 0.8), 0 0 10px rgba(74, 222, 128, 0.6), 0 0 20px rgba(74, 222, 128, 0.4), 0 0 40px rgba(74, 222, 128, 0.2);
+        }
+        body {
+            background-color: #0a0a1a;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            background-image:
+                radial-gradient(circle at 1% 1%, #1a1a3a 1px, transparent 2px),
+                radial-gradient(circle at 99% 99%, #1a1a3a 1px, transparent 2px);
+            background-size: 30px 30px;
+        }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .text-glow-green { text-shadow: var(--glow-green); }
+        .btn-cyber {
+            position: relative; border: 1px solid #4ade80; color: #4ade80; overflow: hidden;
+            transition: all 0.3s ease; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+        }
+        .btn-cyber::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, #4ade80, transparent); transition: left 0.4s ease;
+        }
+        .btn-cyber:hover, .btn-cyber:disabled { color: #0a0a1a; background-color: #4ade80; box-shadow: var(--glow-green); }
+        .btn-cyber:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-cyber:hover::before { left: 100%; }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.2); border-left-color: #4ade80; border-radius: 50%;
+            width: 24px; height: 24px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="antialiased flex items-center justify-center min-h-screen">
+
+    <!-- Login Section -->
+    <div id="login-section" class="w-full max-w-md mx-auto p-8 bg-black/30 backdrop-blur-lg border border-green-500/30 rounded-lg">
+        <h1 class="text-3xl font-orbitron font-bold text-glow-green mb-4 text-center">Admin-Zugang</h1>
+        <p class="text-gray-400 mb-6 text-center">Bitte gib das Passwort ein.</p>
+        <input id="password-input" type="password" placeholder="Passwort" class="w-full bg-gray-900 border border-green-700 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400">
+        <p id="password-error-msg" class="text-red-500 text-sm mt-2 h-5"></p>
+        <button id="password-submit-btn" class="w-full mt-4 btn-cyber text-lg font-bold py-2 px-6">Anmelden</button>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard-section" class="hidden w-full max-w-3xl mx-auto p-8 bg-black/30 backdrop-blur-lg border border-green-500/30 rounded-lg">
+        <h1 class="text-3xl font-orbitron font-bold text-glow-green mb-4">Admin Dashboard</h1>
+        <p class="text-gray-400 mb-6">Füge ein neues ausstehendes Spiel hinzu oder entferne bestehende.</p>
+        
+        <div class="flex items-center space-x-2">
+            <input id="steam-url-input" type="url" placeholder="https://store.steampowered.com/app/..." class="flex-grow w-full bg-gray-900 border border-green-700 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400">
+            <button id="add-game-btn" class="btn-cyber font-bold py-2 px-4 flex items-center justify-center h-[42px] w-[120px]">
+               <span id="add-game-btn-text">Hinzufügen</span>
+               <div id="add-game-loader" class="loader hidden"></div>
+            </button>
+        </div>
+         <p id="admin-error-msg" class="text-red-500 text-sm mt-2 h-5"></p>
+
+        <h2 class="text-xl font-orbitron mt-8 mb-4 border-b border-green-800 pb-2">Aktuelle Spiele</h2>
+        <div id="admin-games-list" class="space-y-2 max-h-60 overflow-y-auto">
+            <!-- Admin game list will be populated here -->
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
+            authDomain: "mowl-website.firebaseapp.com",
+            projectId: "mowl-website",
+            storageBucket: "mowl-website.firebasestorage.app",
+            messagingSenderId: "181578753317",
+            appId: "1:181578753317:web:f44567dd561d8e7a37a6cc",
+            measurementId: "G-9F6YC5NLCS"
+        };
+      
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const gamesCollection = collection(db, "upcoming-games");
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginSection = document.getElementById('login-section');
+            const dashboardSection = document.getElementById('dashboard-section');
+            const passwordInput = document.getElementById('password-input');
+            const passwordSubmitBtn = document.getElementById('password-submit-btn');
+            const passwordErrorMsg = document.getElementById('password-error-msg');
+            
+            const steamUrlInput = document.getElementById('steam-url-input');
+            const addGameBtn = document.getElementById('add-game-btn');
+            const addGameBtnText = document.getElementById('add-game-btn-text');
+            const addGameLoader = document.getElementById('add-game-loader');
+            const adminGamesList = document.getElementById('admin-games-list');
+            const adminErrorMsg = document.getElementById('admin-error-msg');
+
+            let allGames = [];
+
+            // --- Login Logic ---
+            passwordSubmitBtn.addEventListener('click', async () => {
+                const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d';
+                const enteredPassword = passwordInput.value;
+                if (!enteredPassword) {
+                    passwordErrorMsg.textContent = 'Bitte Passwort eingeben.';
+                    return;
+                }
+                const enteredHash = await sha256(enteredPassword);
+                if (enteredHash === storedHash) {
+                    loginSection.classList.add('hidden');
+                    dashboardSection.classList.remove('hidden');
+                    startDashboard();
+                } else {
+                    passwordErrorMsg.textContent = 'Falsches Passwort.';
+                    passwordInput.value = '';
+                }
+            });
+            
+            passwordInput.addEventListener('keyup', e => {
+                if (e.key === 'Enter') passwordSubmitBtn.click();
+            });
+
+            async function sha256(message) {
+                const msgBuffer = new TextEncoder().encode(message);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+
+            // --- Dashboard Logic (starts after login) ---
+            function startDashboard() {
+                onSnapshot(gamesCollection, (snapshot) => {
+                    allGames = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    populateAdminList();
+                });
+            }
+
+            function populateAdminList() {
+                adminGamesList.innerHTML = '';
+                if (allGames.length > 0) {
+                    allGames.forEach(game => {
+                        const gameDiv = document.createElement('div');
+                        gameDiv.className = 'flex justify-between items-center bg-gray-900 p-2 rounded';
+                        gameDiv.innerHTML = `
+                            <span class="text-sm truncate text-gray-400">${game.url}</span>
+                            <button data-id="${game.id}" class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>
+                        `;
+                        adminGamesList.appendChild(gameDiv);
+                    });
+                } else {
+                    adminGamesList.innerHTML = '<p class="text-gray-600 text-sm">Noch keine Spiele hinzugefügt.</p>';
+                }
+            }
+            
+            async function fetchSteamGameData(steamUrl) {
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(steamUrl)}`;
+                try {
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error(`Network response was not ok`);
+                    await response.text(); // Check if parsable
+                    return true;
+                } catch (error) {
+                    console.error("Failed to fetch Steam game data:", error);
+                    return false;
+                }
+            }
+
+            addGameBtn.addEventListener('click', async () => {
+                const url = steamUrlInput.value.trim();
+                adminErrorMsg.textContent = '';
+                
+                if (!url || !url.startsWith('https://store.steampowered.com/app/')) {
+                    adminErrorMsg.textContent = 'Bitte einen gültigen Steam App Link einfügen.';
+                    return;
+                }
+                
+                if (allGames.some(game => game.url === url)) {
+                     adminErrorMsg.textContent = 'Dieses Spiel wurde bereits hinzugefügt.';
+                     return;
+                }
+
+                addGameBtn.disabled = true;
+                addGameBtnText.classList.add('hidden');
+                addGameLoader.classList.remove('hidden');
+
+                try {
+                    const isValid = await fetchSteamGameData(url);
+                    if (!isValid) throw new Error('Invalid Steam page or data.');
+                    await addDoc(gamesCollection, { url: url });
+                    steamUrlInput.value = '';
+                } catch (error) {
+                     adminErrorMsg.textContent = 'Spiel konnte nicht abgerufen werden. Überprüfe den Link.';
+                } finally {
+                    addGameBtn.disabled = false;
+                    addGameBtnText.classList.remove('hidden');
+                    addGameLoader.classList.add('hidden');
+                }
+            });
+
+            adminGamesList.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('remove-game-btn')) {
+                    const docIdToRemove = e.target.dataset.id;
+                    await deleteDoc(doc(db, "upcoming-games", docIdToRemove));
+                }
+            });
+        });
+    </script>
+</body>
+</html>
