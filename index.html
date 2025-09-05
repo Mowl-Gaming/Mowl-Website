@@ -327,7 +327,7 @@
             <p class="max-w-md mx-auto mb-8">
                 Hast du eine Frage oder möchtest mit uns zusammenarbeiten? Wir freuen uns, von dir zu hören.
             </p>
-            <a href="mailto:kontakt@mowl.dev" class="text-lg font-semibold text-green-400 hover:text-glow-green transition-all">kontakt@mowl.dev</a>
+            <a href="mailto:kontakt@mowl.dev" class="text-lg font-semibold text-green-400 hover:text-glow-green transition-all">mowlgaming.dev@gmail.com</a>
             
             <div class="flex justify-center space-x-6 mt-8">
                  <!-- Social Links Here -->
@@ -492,12 +492,18 @@
             }
 
             function createGameCard(game) {
+                 const steamWebUrl = game.url;
+                 // Extrahiert die App-ID aus der Standard-URL
+                 const appId = steamWebUrl.split('/')[4];
+                 // Erstellt den Link, der die Steam-App direkt öffnet
+                 const steamAppUrl = `steam://store/${appId}`;
+
                  return `
-                    <div class="card p-6 rounded-lg text-center" data-url="${game.url}">
+                    <div class="card p-6 rounded-lg text-center" data-url="${steamWebUrl}">
                         <img src="${game.image}" alt="${game.title} Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
                         <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${game.title}</h3>
                         <p class="text-gray-400 mb-4 h-24 overflow-hidden text-ellipsis">${game.description}</p>
-                        <a href="${game.url}" title="Öffnet die Steam-Seite für ${game.title} in einem neuen Tab" target="_blank" rel="noopener noreferrer" class="font-semibold text-green-400 hover:text-white transition-colors">Auf Steam ansehen &rarr;</a>
+                        <a href="${steamAppUrl}" title="Öffnet ${game.title} direkt in der Steam App" class="font-semibold text-green-400 hover:text-white transition-colors">In Steam öffnen &rarr;</a>
                     </div>
                 `;
             }
@@ -658,6 +664,7 @@
     </script>
 </body>
 </html>
+
 
 
 
