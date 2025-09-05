@@ -101,7 +101,7 @@
             animation: rotate 6s linear infinite;
             opacity: 0;
             transition: opacity 0.4s ease;
-            z-index: -1; /* Diese Zeile ist neu und behebt das Problem */
+            z-index: -1; 
         }
         
         .card:hover::before {
@@ -252,10 +252,33 @@
                 <div class="text-center mb-16">
                     <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Ausstehende <span class="text-green-400">Spiele</span></h2>
                 </div>
-                <div id="upcoming-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                   <!-- Game cards will be dynamically inserted here from Firebase -->
+                
+                <!-- Coop Category -->
+                <div class="mb-16">
+                    <h3 class="text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Coop</h3>
+                    <div id="coop-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <!-- Coop games will be populated here -->
+                    </div>
+                    <p id="no-coop-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Coop-Spiele angekündigt.</p>
                 </div>
-                 <p id="no-upcoming-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine neuen Spiele angekündigt. Schau bald wieder vorbei!</p>
+
+                <!-- Singleplayer Category -->
+                <div class="mb-16">
+                    <h3 class="text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Singleplayer</h3>
+                    <div id="singleplayer-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <!-- Singleplayer games will be populated here -->
+                    </div>
+                     <p id="no-singleplayer-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Singleplayer-Spiele angekündigt.</p>
+                </div>
+
+                <!-- Not Free Category -->
+                <div>
+                    <h3 class="text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Not Free</h3>
+                    <div id="not-free-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <!-- Not Free games will be populated here -->
+                    </div>
+                    <p id="no-not-free-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine kostenpflichtigen Spiele angekündigt.</p>
+                </div>
             </div>
         </section>
 
@@ -420,20 +443,37 @@
             });
 
             // --- Upcoming Games Display ---
-            const upcomingGamesGrid = document.getElementById('upcoming-games-grid');
-            const noUpcomingGamesMsg = document.getElementById('no-upcoming-games');
+            const grids = {
+                coop: document.getElementById('coop-games-grid'),
+                singleplayer: document.getElementById('singleplayer-games-grid'),
+                not_free: document.getElementById('not-free-games-grid')
+            };
+            const noGamesMsgs = {
+                coop: document.getElementById('no-coop-games'),
+                singleplayer: document.getElementById('no-singleplayer-games'),
+                not_free: document.getElementById('no-not-free-games')
+            };
+
+            const fetchedDataCache = new Map();
             
             async function fetchSteamGameData(steamUrl) {
+                if (fetchedDataCache.has(steamUrl)) {
+                    return fetchedDataCache.get(steamUrl);
+                }
                 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(steamUrl)}`;
                 try {
                     const response = await fetch(proxyUrl);
                     if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
                     const htmlText = await response.text();
                     const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-                    const title = doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel';
-                    const description = doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.';
-                    const image = doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt';
-                    return { title, description, image, url: steamUrl };
+                    const data = {
+                         title: doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel',
+                         description: doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.',
+                         image: doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt',
+                         url: steamUrl
+                    };
+                    fetchedDataCache.set(steamUrl, data);
+                    return data;
                 } catch (error) {
                     console.error("Failed to fetch Steam game data:", error);
                     throw error;
@@ -455,51 +495,51 @@
                 `;
             }
 
-            function createLoadingPlaceholder() {
-                return `
-                    <div class="card p-6 rounded-lg text-center animate-pulse">
-                        <div class="w-full h-48 bg-gray-800 rounded mb-4"></div>
-                        <div class="h-8 bg-gray-800 rounded mb-2 w-3/4 mx-auto"></div>
-                        <div class="space-y-2">
-                           <div class="h-4 bg-gray-800 rounded w-full"></div>
-                           <div class="h-4 bg-gray-800 rounded w-full"></div>
-                           <div class="h-4 bg-gray-800 rounded w-2/3"></div>
-                        </div>
-                    </div>
-                `;
-            }
-
             // --- REALTIME LISTENER FROM FIREBASE ---
             onSnapshot(gamesCollection, (snapshot) => {
                 const gameDocs = snapshot.docs;
-                loadUpcomingGames(gameDocs);
+                displayCategorizedGames(gameDocs);
             });
             
-            async function loadUpcomingGames(gameDocs) {
-                upcomingGamesGrid.innerHTML = '';
-                
-                if (gameDocs.length === 0) {
-                    noUpcomingGamesMsg.classList.remove('hidden');
-                    return;
-                }
-                noUpcomingGamesMsg.classList.add('hidden');
-                
-                for (let i = 0; i < gameDocs.length; i++) {
-                     upcomingGamesGrid.innerHTML += createLoadingPlaceholder();
-                }
+            async function displayCategorizedGames(docs) {
+                // Reset grids and hide messages
+                Object.values(grids).forEach(grid => grid.innerHTML = '');
+                Object.values(noGamesMsgs).forEach(msg => msg.classList.add('hidden'));
 
-                const gamePromises = gameDocs.map(doc => fetchSteamGameData(doc.data().url).catch(e => null));
-                const gameDataArray = await Promise.all(gamePromises);
+                const categorizedDocs = { coop: [], singleplayer: [], not_free: [] };
                 
-                upcomingGamesGrid.innerHTML = ''; // Clear placeholders
-                gameDataArray.forEach(gameData => {
-                    if (gameData) {
-                        upcomingGamesGrid.innerHTML += createGameCard(gameData);
-                    }
+                // Categorize documents based on tags
+                docs.forEach(doc => {
+                    const data = doc.data();
+                    const tags = data.tags || [];
+                    if (tags.includes('coop')) categorizedDocs.coop.push(data);
+                    if (tags.includes('singleplayer')) categorizedDocs.singleplayer.push(data);
+                    if (tags.includes('not_free')) categorizedDocs.not_free.push(data);
                 });
+                
+                // Process each category
+                for (const category in categorizedDocs) {
+                    const grid = grids[category];
+                    const noGamesMsg = noGamesMsgs[category];
+                    const docsForCategory = categorizedDocs[category];
+
+                    if (docsForCategory.length === 0) {
+                        noGamesMsg.classList.remove('hidden');
+                        continue;
+                    }
+                    
+                    const fetchPromises = docsForCategory.map(doc => fetchSteamGameData(doc.url).catch(e => null));
+                    const gameDataArray = await Promise.all(fetchPromises);
+                    
+                    grid.innerHTML = ''; // Clear potential placeholders
+                    gameDataArray.forEach(gameData => {
+                        if (gameData) {
+                            grid.innerHTML += createGameCard(gameData);
+                        }
+                    });
+                }
             }
         });
     </script>
 </body>
 </html>
-
