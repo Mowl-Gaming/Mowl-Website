@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mowl - Admin Dashboard</title>
+    <title>Mowl Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,49 +34,102 @@
         .btn-cyber:hover, .btn-cyber:disabled { color: #0a0a1a; background-color: #4ade80; box-shadow: var(--glow-green); }
         .btn-cyber:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-cyber:hover::before { left: 100%; }
+        .form-input {
+            background: rgba(10, 10, 26, 0.8);
+            border: 1px solid rgba(74, 222, 128, 0.4);
+            color: #e0e0e0;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #4ade80;
+            box-shadow: var(--glow-green);
+        }
         .loader {
-            border: 4px solid rgba(255, 255, 255, 0.2); border-left-color: #4ade80; border-radius: 50%;
-            width: 24px; height: 24px; animation: spin 1s linear infinite;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-left-color: #4ade80;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Custom Checkbox */
+        .custom-checkbox {
+            appearance: none;
+            background-color: #1a1a3a;
+            border: 1px solid #4a5568;
+            border-radius: 4px;
+            width: 1.25rem;
+            height: 1.25rem;
+            display: inline-block;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .custom-checkbox:checked {
+            background-color: #4ade80;
+            border-color: #4ade80;
+        }
+        .custom-checkbox:checked::after {
+            content: '✓';
+            font-size: 1rem;
+            color: #0a0a1a;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body class="antialiased flex items-center justify-center min-h-screen">
 
     <!-- Login Section -->
-    <div id="login-section" class="w-full max-w-md mx-auto p-8 bg-black/30 backdrop-blur-lg border border-green-500/30 rounded-lg">
-        <h1 class="text-3xl font-orbitron font-bold text-glow-green mb-4 text-center">Admin-Zugang</h1>
-        <p class="text-gray-400 mb-6 text-center">Bitte gib das Passwort ein.</p>
-        <input id="password-input" type="password" placeholder="Passwort" class="w-full bg-gray-900 border border-green-700 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400">
-        <p id="password-error-msg" class="text-red-500 text-sm mt-2 h-5"></p>
-        <button id="password-submit-btn" class="w-full mt-4 btn-cyber text-lg font-bold py-2 px-6">Anmelden</button>
-    </div>
-
-    <!-- Dashboard Section -->
-    <div id="dashboard-section" class="hidden w-full max-w-3xl mx-auto p-8 bg-black/30 backdrop-blur-lg border border-green-500/30 rounded-lg">
-        <h1 class="text-3xl font-orbitron font-bold text-glow-green mb-4">Admin Dashboard</h1>
-        <p class="text-gray-400 mb-6">Füge ein neues ausstehendes Spiel hinzu oder entferne bestehende.</p>
-        
-        <div class="flex items-center space-x-2">
-            <input id="steam-url-input" type="url" placeholder="https://store.steampowered.com/app/..." class="flex-grow w-full bg-gray-900 border border-green-700 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400">
-            <button id="add-game-btn" class="btn-cyber font-bold py-2 px-4 flex items-center justify-center h-[42px] w-[120px]">
-               <span id="add-game-btn-text">Hinzufügen</span>
-               <div id="add-game-loader" class="loader hidden"></div>
-            </button>
-        </div>
-         <p id="admin-error-msg" class="text-red-500 text-sm mt-2 h-5"></p>
-
-        <h2 class="text-xl font-orbitron mt-8 mb-4 border-b border-green-800 pb-2">Aktuelle Spiele</h2>
-        <div id="admin-games-list" class="space-y-2 max-h-60 overflow-y-auto">
-            <!-- Admin game list will be populated here -->
+    <div id="login-section" class="w-full max-w-md">
+        <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg text-center">
+            <h1 class="text-3xl font-orbitron font-bold mb-6 text-glow-green">Admin Login</h1>
+            <input type="password" id="password-input" class="form-input w-full p-3 rounded mb-4 text-center" placeholder="Passwort">
+            <button id="login-btn" class="btn-cyber w-full py-3 font-bold">Anmelden</button>
+            <p id="error-msg" class="text-red-500 mt-4 h-4"></p>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
+    <!-- Dashboard Section (hidden by default) -->
+    <div id="dashboard-section" class="hidden w-full max-w-4xl container mx-auto p-6">
+        <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-orbitron font-bold text-glow-green">Dashboard</h1>
+                <button id="logout-btn" class="text-gray-400 hover:text-green-400 text-sm">Abmelden</button>
+            </div>
+            
+            <!-- Add Game Form -->
+            <div class="mb-8">
+                <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="steam-url-input" class="form-input w-full p-3 rounded" placeholder="Steam Store URL...">
+                    <button id="add-game-btn" class="btn-cyber py-3 px-6 font-bold flex items-center justify-center">
+                        <span id="add-game-text">Hinzufügen</span>
+                        <div id="add-game-loader" class="loader hidden"></div>
+                    </button>
+                </div>
+                 <p id="add-game-error" class="text-red-500 mt-2 h-4 text-sm"></p>
+            </div>
+
+            <!-- Games List -->
+            <div>
+                <h2 class="text-xl font-orbitron mb-4">Spiele verwalten</h2>
+                <div id="games-list" class="space-y-4">
+                    <!-- Games will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-      
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // --- WICHTIG: Deine Firebase Konfiguration hier einfügen! ---
         const firebaseConfig = {
             apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
             authDomain: "mowl-website.firebaseapp.com",
@@ -86,133 +139,202 @@
             appId: "1:181578753317:web:f44567dd561d8e7a37a6cc",
             measurementId: "G-9F6YC5NLCS"
         };
-      
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const gamesCollection = collection(db, "upcoming-games");
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginSection = document.getElementById('login-section');
-            const dashboardSection = document.getElementById('dashboard-section');
-            const passwordInput = document.getElementById('password-input');
-            const passwordSubmitBtn = document.getElementById('password-submit-btn');
-            const passwordErrorMsg = document.getElementById('password-error-msg');
-            
-            const steamUrlInput = document.getElementById('steam-url-input');
-            const addGameBtn = document.getElementById('add-game-btn');
-            const addGameBtnText = document.getElementById('add-game-btn-text');
-            const addGameLoader = document.getElementById('add-game-loader');
-            const adminGamesList = document.getElementById('admin-games-list');
-            const adminErrorMsg = document.getElementById('admin-error-msg');
+        // --- DOM Elements ---
+        const loginSection = document.getElementById('login-section');
+        const dashboardSection = document.getElementById('dashboard-section');
+        const passwordInput = document.getElementById('password-input');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const errorMsg = document.getElementById('error-msg');
+        
+        const steamUrlInput = document.getElementById('steam-url-input');
+        const addGameBtn = document.getElementById('add-game-btn');
+        const addGameText = document.getElementById('add-game-text');
+        const addGameLoader = document.getElementById('add-game-loader');
+        const addGameError = document.getElementById('add-game-error');
+        const gamesList = document.getElementById('games-list');
 
-            let allGames = [];
+        // --- Authentication ---
+        const SESSION_KEY = 'mowl-admin-auth';
 
-            // --- Login Logic ---
-            passwordSubmitBtn.addEventListener('click', async () => {
-                const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d';
-                const enteredPassword = passwordInput.value;
-                if (!enteredPassword) {
-                    passwordErrorMsg.textContent = 'Bitte Passwort eingeben.';
-                    return;
-                }
-                const enteredHash = await sha256(enteredPassword);
-                if (enteredHash === storedHash) {
-                    loginSection.classList.add('hidden');
-                    dashboardSection.classList.remove('hidden');
-                    startDashboard();
-                } else {
-                    passwordErrorMsg.textContent = 'Falsches Passwort.';
-                    passwordInput.value = '';
-                }
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function handleLogin() {
+            const storedHash = '129df68872b49b6b3e7215354922b9c792160ae526b71dc772655844af502b48'; // "mowladmin"
+            const enteredHash = await sha256(passwordInput.value);
+
+            if (enteredHash === storedHash) {
+                sessionStorage.setItem(SESSION_KEY, 'true');
+                showDashboard();
+            } else {
+                errorMsg.textContent = 'Falsches Passwort.';
+                passwordInput.value = '';
+            }
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem(SESSION_KEY);
+            loginSection.classList.remove('hidden');
+            dashboardSection.classList.add('hidden');
+        }
+
+        function showDashboard() {
+            loginSection.classList.add('hidden');
+            dashboardSection.classList.remove('hidden');
+            loadGames();
+        }
+
+        // --- Game Management ---
+        
+        async function fetchAndParseSteamPage(steamUrl) {
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(steamUrl)}`;
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error('Steam page fetch failed');
+            const htmlText = await response.text();
+            const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+
+            const tags = new Set();
+            doc.querySelectorAll('.app_tag').forEach(tagEl => {
+                const tag = tagEl.textContent.trim().toLowerCase();
+                if (tag.includes('co-op') || tag.includes('multiplayer')) tags.add('coop');
+                if (tag.includes('single-player')) tags.add('singleplayer');
             });
             
-            passwordInput.addEventListener('keyup', e => {
-                if (e.key === 'Enter') passwordSubmitBtn.click();
-            });
+            const price = doc.querySelector('.game_purchase_price, .discount_final_price');
+            if (price && !price.textContent.toLowerCase().includes('free')) {
+                tags.add('not_free');
+            }
+            
+            const title = doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel';
 
-            async function sha256(message) {
-                const msgBuffer = new TextEncoder().encode(message);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return { tags: Array.from(tags), title };
+        }
+
+        async function handleAddGame() {
+            const url = steamUrlInput.value.trim();
+            if (!url.startsWith('https://store.steampowered.com/app/')) {
+                addGameError.textContent = 'Bitte eine gültige Steam App URL eingeben.';
+                return;
             }
 
-            // --- Dashboard Logic (starts after login) ---
-            function startDashboard() {
-                onSnapshot(gamesCollection, (snapshot) => {
-                    allGames = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    populateAdminList();
+            addGameBtn.disabled = true;
+            addGameText.classList.add('hidden');
+            addGameLoader.classList.remove('hidden');
+            addGameError.textContent = '';
+
+            try {
+                const { tags, title } = await fetchAndParseSteamPage(url);
+                await addDoc(gamesCollection, {
+                    url: url,
+                    title: title, // Store title for easier management
+                    tags: tags 
                 });
+                steamUrlInput.value = '';
+            } catch (error) {
+                console.error("Error adding game:", error);
+                addGameError.textContent = 'Spiel konnte nicht hinzugefügt werden.';
+            } finally {
+                addGameBtn.disabled = false;
+                addGameText.classList.remove('hidden');
+                addGameLoader.classList.add('hidden');
             }
+        }
 
-            function populateAdminList() {
-                adminGamesList.innerHTML = '';
-                if (allGames.length > 0) {
-                    allGames.forEach(game => {
-                        const gameDiv = document.createElement('div');
-                        gameDiv.className = 'flex justify-between items-center bg-gray-900 p-2 rounded';
-                        gameDiv.innerHTML = `
-                            <span class="text-sm truncate text-gray-400">${game.url}</span>
-                            <button data-id="${game.id}" class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>
-                        `;
-                        adminGamesList.appendChild(gameDiv);
-                    });
-                } else {
-                    adminGamesList.innerHTML = '<p class="text-gray-600 text-sm">Noch keine Spiele hinzugefügt.</p>';
-                }
+        async function handleDeleteGame(gameId) {
+            if (confirm('Dieses Spiel wirklich löschen?')) {
+                await deleteDoc(doc(db, "upcoming-games", gameId));
+            }
+        }
+
+        async function handleTagChange(gameId, tag, isChecked) {
+            const docRef = doc(db, "upcoming-games", gameId);
+            const game = gamesData.find(g => g.id === gameId);
+            if (!game) return;
+
+            const currentTags = new Set(game.tags);
+            if (isChecked) {
+                currentTags.add(tag);
+            } else {
+                currentTags.delete(tag);
             }
             
-            async function fetchSteamGameData(steamUrl) {
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(steamUrl)}`;
-                try {
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error(`Network response was not ok`);
-                    await response.text(); // Check if parsable
-                    return true;
-                } catch (error) {
-                    console.error("Failed to fetch Steam game data:", error);
-                    return false;
+            await updateDoc(docRef, { tags: Array.from(currentTags) });
+        }
+        
+        let gamesData = []; // Cache for tag updates
+
+        function loadGames() {
+            onSnapshot(gamesCollection, (snapshot) => {
+                gamesList.innerHTML = ''; // Clear list
+                gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (gamesData.length === 0) {
+                     gamesList.innerHTML = '<p class="text-gray-600">Noch keine Spiele hinzugefügt.</p>';
                 }
+
+                gamesData.sort((a,b) => a.title.localeCompare(b.title)).forEach(game => {
+                    const gameEl = document.createElement('div');
+                    gameEl.className = 'bg-gray-900/50 p-4 rounded-lg flex items-center justify-between';
+                    
+                    const title = game.title || game.url.split('/')[5].replace(/_/g, ' ') || 'Unbekanntes Spiel';
+
+                    gameEl.innerHTML = `
+                        <div>
+                            <p class="font-bold truncate">${title}</p>
+                            <div class="flex items-center space-x-4 mt-2">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" data-tag="coop" class="custom-checkbox" ${game.tags?.includes('coop') ? 'checked' : ''}>
+                                    <span class="text-sm text-gray-400">Coop</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" data-tag="singleplayer" class="custom-checkbox" ${game.tags?.includes('singleplayer') ? 'checked' : ''}>
+                                    <span class="text-sm text-gray-400">Singleplayer</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" data-tag="not_free" class="custom-checkbox" ${game.tags?.includes('not_free') ? 'checked' : ''}>
+                                    <span class="text-sm text-gray-400">Not Free</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button data-id="${game.id}" class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-3 py-1">&times; Löschen</button>
+                    `;
+                    gamesList.appendChild(gameEl);
+
+                    // Add event listeners for checkboxes and delete button
+                    gameEl.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                        checkbox.addEventListener('change', (e) => {
+                           handleTagChange(game.id, e.target.dataset.tag, e.target.checked);
+                        });
+                    });
+                    gameEl.querySelector('.remove-game-btn').addEventListener('click', () => {
+                        handleDeleteGame(game.id);
+                    });
+                });
+            });
+        }
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem(SESSION_KEY) === 'true') {
+                showDashboard();
             }
 
-            addGameBtn.addEventListener('click', async () => {
-                const url = steamUrlInput.value.trim();
-                adminErrorMsg.textContent = '';
-                
-                if (!url || !url.startsWith('https://store.steampowered.com/app/')) {
-                    adminErrorMsg.textContent = 'Bitte einen gültigen Steam App Link einfügen.';
-                    return;
-                }
-                
-                if (allGames.some(game => game.url === url)) {
-                     adminErrorMsg.textContent = 'Dieses Spiel wurde bereits hinzugefügt.';
-                     return;
-                }
-
-                addGameBtn.disabled = true;
-                addGameBtnText.classList.add('hidden');
-                addGameLoader.classList.remove('hidden');
-
-                try {
-                    const isValid = await fetchSteamGameData(url);
-                    if (!isValid) throw new Error('Invalid Steam page or data.');
-                    await addDoc(gamesCollection, { url: url });
-                    steamUrlInput.value = '';
-                } catch (error) {
-                     adminErrorMsg.textContent = 'Spiel konnte nicht abgerufen werden. Überprüfe den Link.';
-                } finally {
-                    addGameBtn.disabled = false;
-                    addGameBtnText.classList.remove('hidden');
-                    addGameLoader.classList.add('hidden');
-                }
+            loginBtn.addEventListener('click', handleLogin);
+            passwordInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') handleLogin();
             });
-
-            adminGamesList.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('remove-game-btn')) {
-                    const docIdToRemove = e.target.dataset.id;
-                    await deleteDoc(doc(db, "upcoming-games", docIdToRemove));
-                }
-            });
+            logoutBtn.addEventListener('click', handleLogout);
+            addGameBtn.addEventListener('click', handleAddGame);
         });
     </script>
 </body>
