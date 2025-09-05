@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mowl - Die Zukunft des Gamings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glow-green: 0 0 5px rgba(74, 222, 128, 0.8), 0 0 10px rgba(74, 222, 128, 0.6), 0 0 20px rgba(74, 222, 128, 0.4), 0 0 40px rgba(74, 222, 128, 0.2);
+            --glow-magenta: 0 0 5px rgba(255, 0, 255, 0.8), 0 0 10px rgba(255, 0, 255, 0.6), 0 0 20px rgba(255, 0, 255, 0.4), 0 0 40px rgba(255, 0, 255, 0.2);
+        }
+
+        body {
+            background-color: #0a0a1a;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 1% 1%, #1a1a3a 1px, transparent 2px),
+                radial-gradient(circle at 99% 99%, #1a1a3a 1px, transparent 2px);
+            background-size: 30px 30px;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .text-glow-green {
+            text-shadow: var(--glow-green);
+        }
+
+        .text-glow-magenta {
+            text-shadow: var(--glow-magenta);
+        }
+        
+        .border-glow-green {
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+        }
+
+        .btn-cyber {
+            position: relative;
+            border: 1px solid #4ade80; /* green-400 */
+            color: #4ade80; /* green-400 */
+            overflow: hidden;
+            transition: all 0.3s ease;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+        }
+
+        .btn-cyber::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, #4ade80, transparent);
+            transition: left 0.4s ease;
+        }
+
+        .btn-cyber:hover, .btn-cyber:disabled {
+            color: #0a0a1a;
+            background-color: #4ade80; /* green-400 */
+            box-shadow: var(--glow-green);
+        }
+        
+        .btn-cyber:disabled {
+             opacity: 0.5;
+             cursor: not-allowed;
+        }
+
+        .btn-cyber:hover::before {
+            left: 100%;
+        }
+
+        .card {
+            background: rgba(15, 15, 35, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.4), 0 0 30px rgba(74, 222, 128, 0.2);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(transparent, rgba(74, 222, 128, 0.2), transparent 30%);
+            animation: rotate 6s linear infinite;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .section-header {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+            border-left: 2px solid #4ade80; /* green-400 */
+            border-bottom: 2px solid #4ade80; /* green-400 */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 1s ease-out forwards;
+        }
+        
+        .scroll-target {
+            opacity: 0;
+        }
+        
+        /* --- Modal Styles --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: #0a0a1a;
+            border: 1px solid #4ade80;
+            box-shadow: var(--glow-green);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        /* --- Loading Spinner --- */
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-left-color: #4ade80;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-lg">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-bold font-orbitron text-glow-green cursor-pointer">MOWL</h1>
+            <nav class="hidden md:flex space-x-8">
+                <a href="#about" class="text-lg hover:text-green-400 transition-colors duration-300">Über Uns</a>
+                <a href="#upcoming-games" class="text-lg hover:text-green-400 transition-colors duration-300">Ausstehende Spiele</a>
+                <a href="#games" class="text-lg hover:text-green-400 transition-colors duration-300">Spiele</a>
+                <a href="#team" class="text-lg hover:text-green-400 transition-colors duration-300">Team</a>
+                <a href="#contact" class="text-lg hover:text-green-400 transition-colors duration-300">Kontakt</a>
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden p-2 rounded-md text-gray-200 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="md:hidden hidden px-6 pb-4 space-y-2">
+             <a href="#about" class="block text-lg hover:text-green-400 transition-colors duration-300">Über Uns</a>
+             <a href="#upcoming-games" class="block text-lg hover:text-green-400 transition-colors duration-300">Ausstehende Spiele</a>
+             <a href="#games" class="block text-lg hover:text-green-400 transition-colors duration-300">Spiele</a>
+             <a href="#team" class="block text-lg hover:text-green-400 transition-colors duration-300">Team</a>
+             <a href="#contact" class="block text-lg hover:text-green-400 transition-colors duration-300">Kontakt</a>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="min-h-screen flex items-center justify-center text-center overflow-hidden relative">
+            <div class="absolute inset-0 bg-black opacity-50 z-0"></div>
+            <div id="hero-bg" class="absolute inset-0 z-[-1]"></div>
+
+            <div class="container mx-auto px-6 z-10">
+                <h2 class="text-5xl md:text-7xl lg:text-8xl font-orbitron font-black uppercase text-glow-green animate-pulse">
+                    Mowl
+                </h2>
+                <p class="mt-4 text-xl md:text-2xl lg:text-3xl font-semibold">
+                    Wir Definieren die <span class="text-magenta-500 text-glow-magenta">Zukunft</span> des Gamings.
+                </p>
+                <a href="#about" class="mt-12 inline-block btn-cyber text-xl font-bold py-3 px-8">
+                    ENTDECKE MEHR
+                </a>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="py-20 scroll-target">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                     <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Über <span class="text-green-400">Mowl</span></h2>
+                </div>
+                <div class="max-w-4xl mx-auto text-center text-lg leading-relaxed">
+                    <p>
+                        Mowl ist nicht nur ein Name – es ist eine Vision. Geboren aus Leidenschaft für immersive Welten und bahnbrechende Technologien, schmieden wir die nächste Generation interaktiver Unterhaltung. Wir verschieben Grenzen, brechen Regeln und erschaffen Erlebnisse, die dich nicht mehr loslassen. Willkommen in unserer Realität.
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Upcoming Games Section -->
+        <section id="upcoming-games" class="py-20 bg-black/20 scroll-target">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Ausstehende <span class="text-green-400">Spiele</span></h2>
+                </div>
+                <div id="upcoming-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                   <!-- Game cards will be dynamically inserted here -->
+                </div>
+                 <p id="no-upcoming-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine neuen Spiele angekündigt. Schau bald wieder vorbei!</p>
+            </div>
+        </section>
+
+        <!-- Games Section -->
+        <section id="games" class="py-20 scroll-target">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Unsere <span class="text-green-400">Projekte</span></h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Game Card 1 -->
+                    <div class="card p-6 rounded-lg text-center">
+                        <img src="https://placehold.co/600x400/0a0a1a/4ade80?text=CYBERPULSE" alt="Cyberpulse Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
+                        <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">Cyberpulse</h3>
+                        <p class="text-gray-400 mb-4">Ein rasanter Action-Roguelike in den neon-getränkten Straßen von Neo-Kyoto.</p>
+                        <a href="#" class="font-semibold text-green-400 hover:text-white transition-colors">Mehr erfahren &rarr;</a>
+                    </div>
+                    <!-- Game Card 2 -->
+                    <div class="card p-6 rounded-lg text-center">
+                        <img src="https://placehold.co/600x400/0a0a1a/ff00ff?text=VOID+ECHO" alt="Void Echo Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-magenta-500/50">
+                        <h3 class="text-2xl font-orbitron font-bold mb-2 text-magenta-300">Void Echo</h3>
+                        <p class="text-gray-400 mb-4">Erforsche die geheimnisvollen Ruinen einer alten Zivilisation in diesem Sci-Fi-Adventure.</p>
+                        <a href="#" class="font-semibold text-magenta-400 hover:text-white transition-colors">Mehr erfahren &rarr;</a>
+                    </div>
+                    <!-- Game Card 3 -->
+                    <div class="card p-6 rounded-lg text-center">
+                         <img src="https://placehold.co/600x400/0a0a1a/ffffff?text=PROJECT+CHIMERA" alt="Project Chimera Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-gray-400/50">
+                        <h3 class="text-2xl font-orbitron font-bold mb-2 text-gray-300">Project Chimera</h3>
+                        <p class="text-gray-400 mb-4">Ein streng geheimes Multiplayer-Erlebnis, das Taktik und Strategie neu definieren wird.</p>
+                         <a href="#" class="font-semibold text-gray-400 hover:text-white transition-colors">Demnächst &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Team Section -->
+        <section id="team" class="py-20 scroll-target">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Das <span class="text-green-400">Kernteam</span></h2>
+                </div>
+                <div class="flex flex-wrap justify-center gap-8">
+                    <!-- Team Member 4 (Mike) -->
+                    <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 text-center">
+                        <div class="card p-4 rounded-lg">
+                           <img src="https://i.imgur.com/fTC32Td.png" alt="Teammitglied Mike" class="w-32 h-32 rounded-full mx-auto mb-4 border-2 border-green-400 object-cover bg-black">
+                            <h3 class="text-xl font-bold font-orbitron text-green-300">Mike</h3>
+                            <p class="text-gray-400">Community Manager</p>
+                        </div>
+                    </div>
+                    <!-- Team Member 5 (Powl) -->
+                    <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 text-center">
+                        <div class="card p-4 rounded-lg">
+                           <img src="https://i.imgur.com/uHeQIla.png" alt="Teammitglied Powl" class="w-32 h-32 rounded-full mx-auto mb-4 border-2 border-yellow-400 object-cover">
+                            <h3 class="text-xl font-bold font-orbitron text-yellow-300">Powl</h3>
+                            <p class="text-gray-400">Chief Morale Officer</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-black/40 py-12 border-t border-green-500/20">
+        <div class="container mx-auto px-6 text-center">
+            <h3 class="text-3xl font-orbitron font-bold mb-4">Kontakt aufnehmen</h3>
+            <p class="max-w-md mx-auto mb-8">
+                Hast du eine Frage oder möchtest mit uns zusammenarbeiten? Wir freuen uns, von dir zu hören.
+            </p>
+            <a href="mailto:kontakt@mowl.dev" class="text-lg font-semibold text-green-400 hover:text-glow-green transition-all">kontakt@mowl.dev</a>
+            
+            <div class="flex justify-center space-x-6 mt-8">
+                 <!-- Social Links Here -->
+            </div>
+            
+            <p class="mt-10 text-sm text-gray-500">&copy; 2025 Mowl. Alle Rechte vorbehalten.
+                <span id="admin-login-btn" class="cursor-pointer ml-4" title="Admin Login">&#128272;</span>
+            </p>
+        </div>
+    </footer>
+    
+    <!-- Password Modal -->
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-content">
+             <button id="close-password-btn" class="absolute top-4 right-6 text-2xl text-gray-400 hover:text-white">&times;</button>
+            <h3 class="text-2xl font-orbitron font-bold text-glow-green mb-4">Admin-Zugang</h3>
+            <p class="text-gray-400 mb-6">Bitte gib das Passwort ein, um auf das Dashboard zuzugreifen.</p>
+            <input id="password-input" type="password" placeholder="Passwort" class="w-full bg-gray-900 border border-green-700 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400">
+            <p id="password-error-msg" class="text-red-500 text-sm mt-2 h-5"></p> <!-- h-5 to prevent layout shift -->
+            <button id="password-submit-btn" class="w-full mt-4 btn-cyber text-lg font-bold py-2 px-6">
+                Anmelden
+            </button>
+        </div>
+    </div>
+    
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-admin-btn" class="absolute top-4 right-6 text-2xl text-gray-400 hover:text-white">&times;</button>
+            <h3 class="text-2xl font-orbitron font-bold text-glow-green mb-4">Admin Dashboard</h3>
+            <p class="text-gray-400 mb-6">Füge ein neues ausstehendes Spiel hinzu, indem du den Steam Store Link einfügst.</p>
+            
+            <div class="flex items-center space-x-2">
+                <input id="steam-url-input" type="url" placeholder="https://store.steampowered.com/app/..." class="flex-grow w-full bg-gray-900 border border-green-700 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400">
+                <button id="add-game-btn" class="btn-cyber font-bold py-2 px-4 flex items-center justify-center h-[42px] w-[120px]">
+                   <span id="add-game-btn-text">Hinzufügen</span>
+                   <div id="add-game-loader" class="loader hidden"></div>
+                </button>
+            </div>
+             <p id="admin-error-msg" class="text-red-500 text-sm mt-2"></p>
+
+            <h4 class="text-lg font-orbitron mt-8 mb-4 border-b border-green-800 pb-2">Aktuelle Spiele</h4>
+            <div id="admin-games-list" class="space-y-2 max-h-60 overflow-y-auto">
+                <!-- Admin game list will be populated here -->
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Mobile Menu ---
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // --- Animated Hero Background ---
+            const heroBg = document.getElementById('hero-bg');
+            if (heroBg) {
+                let lines = [];
+                const lineCount = 50;
+
+                function createLine() {
+                    const line = document.createElement('div');
+                    line.style.position = 'absolute';
+                    line.style.height = '1px';
+                    line.style.background = `rgba(74, 222, 128, ${Math.random() * 0.3 + 0.1})`;
+                    line.style.width = `${Math.random() * 100 + 50}px`;
+                    line.style.top = `${Math.random() * 100}%`;
+                    line.style.left = `${Math.random() * 100}%`;
+                    line.style.animation = `moveLine ${Math.random() * 20 + 10}s linear infinite`;
+                    heroBg.appendChild(line);
+                    return line;
+                }
+                
+                for (let i = 0; i < lineCount; i++) {
+                    lines.push(createLine());
+                }
+
+                const style = document.createElement('style');
+                style.innerHTML = `
+                @keyframes moveLine {
+                    from { transform: translateX(-200px); }
+                    to { transform: translateX(${window.innerWidth}px); }
+                }`;
+                document.head.appendChild(style);
+            }
+
+            // --- Scroll Animations ---
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('fade-in');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.scroll-target').forEach(el => {
+                observer.observe(el);
+            });
+
+            // --- Upcoming Games & Admin Panel ---
+            const upcomingGamesGrid = document.getElementById('upcoming-games-grid');
+            const noUpcomingGamesMsg = document.getElementById('no-upcoming-games');
+            const adminModal = document.getElementById('admin-modal');
+            const adminLoginBtn = document.getElementById('admin-login-btn');
+            const closeAdminBtn = document.getElementById('close-admin-btn');
+            const steamUrlInput = document.getElementById('steam-url-input');
+            const addGameBtn = document.getElementById('add-game-btn');
+            const addGameBtnText = document.getElementById('add-game-btn-text');
+            const addGameLoader = document.getElementById('add-game-loader');
+            const adminGamesList = document.getElementById('admin-games-list');
+            const adminErrorMsg = document.getElementById('admin-error-msg');
+
+            const passwordModal = document.getElementById('password-modal');
+            const closePasswordBtn = document.getElementById('close-password-btn');
+            const passwordInput = document.getElementById('password-input');
+            const passwordSubmitBtn = document.getElementById('password-submit-btn');
+            const passwordErrorMsg = document.getElementById('password-error-msg');
+
+            const STORAGE_KEY = 'mowl_upcoming_games';
+
+            function getGamesFromStorage() {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            }
+
+            function saveGamesToStorage(games) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(games));
+            }
+            
+            async function fetchSteamGameData(steamUrl) {
+                // Use a CORS proxy to fetch the Steam page HTML
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(steamUrl)}`;
+                try {
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+                    const htmlText = await response.text();
+                    
+                    // Parse the HTML text into a document
+                    const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+                    
+                    // Extract data from meta tags
+                    const title = doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel';
+                    const description = doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.';
+                    const image = doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt';
+
+                    return { title, description, image, url: steamUrl };
+                } catch (error) {
+                    console.error("Failed to fetch Steam game data:", error);
+                    throw error; // Re-throw to be caught by the caller
+                }
+            }
+
+            function createGameCard(game) {
+                return `
+                    <div class="card p-6 rounded-lg text-center" data-url="${game.url}">
+                        <img src="${game.image}" alt="${game.title} Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
+                        <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${game.title}</h3>
+                        <p class="text-gray-400 mb-4 h-24 overflow-hidden text-ellipsis">${game.description}</p>
+                        <a href="${game.url}" target="_blank" rel="noopener noreferrer" class="font-semibold text-green-400 hover:text-white transition-colors">Auf Steam ansehen &rarr;</a>
+                    </div>
+                `;
+            }
+            
+             function createLoadingPlaceholder() {
+                return `
+                    <div class="card p-6 rounded-lg text-center animate-pulse">
+                        <div class="w-full h-48 bg-gray-800 rounded mb-4"></div>
+                        <div class="h-8 bg-gray-800 rounded mb-2 w-3/4 mx-auto"></div>
+                        <div class="space-y-2">
+                           <div class="h-4 bg-gray-800 rounded w-full"></div>
+                           <div class="h-4 bg-gray-800 rounded w-full"></div>
+                           <div class="h-4 bg-gray-800 rounded w-2/3"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async function loadUpcomingGames() {
+                const games = getGamesFromStorage();
+                upcomingGamesGrid.innerHTML = '';
+                
+                if (games.length === 0) {
+                    noUpcomingGamesMsg.classList.remove('hidden');
+                    return;
+                }
+                noUpcomingGamesMsg.classList.add('hidden');
+                
+                // Show placeholders
+                for (let i = 0; i < games.length; i++) {
+                     upcomingGamesGrid.innerHTML += createLoadingPlaceholder();
+                }
+
+                const gamePromises = games.map(url => fetchSteamGameData(url).catch(e => null));
+                const gameDataArray = await Promise.all(gamePromises);
+                
+                upcomingGamesGrid.innerHTML = ''; // Clear placeholders
+                gameDataArray.forEach(gameData => {
+                    if (gameData) {
+                        upcomingGamesGrid.innerHTML += createGameCard(gameData);
+                    }
+                });
+            }
+
+            function populateAdminList() {
+                const games = getGamesFromStorage();
+                adminGamesList.innerHTML = '';
+                if (games.length > 0) {
+                    games.forEach(url => {
+                        const gameDiv = document.createElement('div');
+                        gameDiv.className = 'flex justify-between items-center bg-gray-900 p-2 rounded';
+                        gameDiv.innerHTML = `
+                            <span class="text-sm truncate text-gray-400">${url}</span>
+                            <button data-url="${url}" class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>
+                        `;
+                        adminGamesList.appendChild(gameDiv);
+                    });
+                } else {
+                    adminGamesList.innerHTML = '<p class="text-gray-600 text-sm">Noch keine Spiele hinzugefügt.</p>';
+                }
+            }
+            
+            // Event Listeners
+            adminLoginBtn.addEventListener('click', () => {
+                passwordInput.value = '';
+                passwordErrorMsg.textContent = '';
+                passwordModal.classList.add('active');
+            });
+
+            closePasswordBtn.addEventListener('click', () => passwordModal.classList.remove('active'));
+            passwordModal.addEventListener('click', e => {
+                 if(e.target === passwordModal) passwordModal.classList.remove('active');
+            });
+
+            passwordSubmitBtn.addEventListener('click', () => {
+                if (passwordInput.value === 'mowladmin') {
+                    passwordModal.classList.remove('active');
+                    populateAdminList();
+                    adminModal.classList.add('active');
+                } else {
+                    passwordErrorMsg.textContent = 'Falsches Passwort.';
+                    passwordInput.value = '';
+                }
+            });
+            
+            passwordInput.addEventListener('keyup', e => {
+                if (e.key === 'Enter') {
+                    passwordSubmitBtn.click();
+                }
+            });
+
+            closeAdminBtn.addEventListener('click', () => adminModal.classList.remove('active'));
+            adminModal.addEventListener('click', e => {
+                 if(e.target === adminModal) adminModal.classList.remove('active');
+            });
+
+            addGameBtn.addEventListener('click', async () => {
+                const url = steamUrlInput.value.trim();
+                adminErrorMsg.textContent = '';
+                
+                if (!url || !url.startsWith('https://store.steampowered.com/app/')) {
+                    adminErrorMsg.textContent = 'Bitte einen gültigen Steam App Link einfügen.';
+                    return;
+                }
+                
+                let games = getGamesFromStorage();
+                if (games.includes(url)) {
+                     adminErrorMsg.textContent = 'Dieses Spiel wurde bereits hinzugefügt.';
+                     return;
+                }
+
+                addGameBtn.disabled = true;
+                addGameBtnText.classList.add('hidden');
+                addGameLoader.classList.remove('hidden');
+
+                try {
+                    // Test fetch before adding
+                    await fetchSteamGameData(url);
+                    games.push(url);
+                    saveGamesToStorage(games);
+                    populateAdminList();
+                    loadUpcomingGames(); // Refresh the main page list
+                    steamUrlInput.value = '';
+                } catch (error) {
+                     adminErrorMsg.textContent = 'Spiel konnte nicht abgerufen werden. Überprüfe den Link.';
+                } finally {
+                    addGameBtn.disabled = false;
+                    addGameBtnText.classList.remove('hidden');
+                    addGameLoader.classList.add('hidden');
+                }
+            });
+
+            adminGamesList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-game-btn')) {
+                    const urlToRemove = e.target.dataset.url;
+                    let games = getGamesFromStorage();
+                    games = games.filter(url => url !== urlToRemove);
+                    saveGamesToStorage(games);
+                    populateAdminList();
+                    loadUpcomingGames();
+                }
+            });
+
+            // Initial load
+            loadUpcomingGames();
+        });
+    </script>
+</body>
+</html>
