@@ -544,6 +544,29 @@
                     games.forEach(url => {
                         const gameDiv = document.createElement('div');
                         gameDiv.className = 'flex justify-between items-center bg-gray-900 p-2 rounded';
+                        gameDiv.innerHTML = `
+                            <span class="text-sm truncate text-gray-400">${url}</span>
+                            <button data-url="${url}" class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>
+                        `;
+                        adminGamesList.appendChild(gameDiv);
+                    });
+                } else {
+                    adminGamesList.innerHTML = '<p class="text-gray-600 text-sm">Noch keine Spiele hinzugefügt.</p>';
+                }
+            }
+
+            // Event Listeners
+            adminLoginBtn.addEventListener('click', () => {
+                passwordInput.value = '';
+                passwordErrorMsg.textContent = '';
+                passwordModal.classList.add('active');
+            });
+
+            closePasswordBtn.addEventListener('click', () => passwordModal.classList.remove('active'));
+            passwordModal.addEventListener('click', e => {
+                 if(e.target === passwordModal) passwordModal.classList.remove('active');
+            });
+            
             passwordSubmitBtn.addEventListener('click', async () => {
                 const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d';
                 const enteredPassword = passwordInput.value;
@@ -642,3 +665,7 @@
     </script>
 </body>
 </html>
+
+
+
+
