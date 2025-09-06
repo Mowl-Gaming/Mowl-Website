@@ -45,6 +45,9 @@
             background: rgba(15, 15, 35, 0.5); backdrop-filter: blur(10px);
             border: 1px solid rgba(74, 222, 128, 0.2);
             position: relative; overflow: hidden;
+            display: flex; /* Neu */
+            flex-direction: column; /* Neu */
+            height: 100%; /* Neu */
         }
         .card::before {
             content: ''; position: absolute; top: -50%; left: -50%;
@@ -246,8 +249,6 @@
                 link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
             });
 
-            // ... (rest of the non-Firebase related JS remains the same)
-
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -291,15 +292,23 @@
             const fetchedDataCache = new Map();
             async function fetchSteamGameData(steamUrl) {
                 if (fetchedDataCache.has(steamUrl)) return fetchedDataCache.get(steamUrl);
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(steamUrl)}`;
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(steamUrl)}`;
                 try {
                     const response = await fetch(proxyUrl);
                     if (!response.ok) throw new Error(`Network response was not ok`);
-                    const data = await response.json();
-                    const htmlText = data.contents;
+                    const htmlText = await response.text();
                     const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+                    
+                    const rawTitle = doc.querySelector('meta[property="og:title"]')?.content || 'Unbekannter Titel';
+                    const cleanedTitle = rawTitle
+                        .replace(/Sparen Sie \d+% bei /i, '')
+                        .replace(/Save \d+% on /i, '')
+                        .replace(/ bei Steam/i, '')
+                        .replace(/ on Steam/i, '')
+                        .trim();
+
                     const parsedData = {
-                         title: doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel',
+                         title: cleanedTitle,
                          description: doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.',
                          image: doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt',
                          url: steamUrl
@@ -321,16 +330,20 @@
                  const cardContent = `
                     <div class="card p-6 rounded-lg text-center ${hiddenClass}" data-url="${steamWebUrl}">
                         <img src="${gameData.image}" alt="${gameData.title} Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
-                        <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${gameData.title}</h3>
-                        <p class="text-gray-400 mb-4 h-24 overflow-hidden text-ellipsis">${gameData.description}</p>
-                        <span class="font-semibold text-green-400 hover:text-white transition-colors">In Steam öffnen &rarr;</span>
+                        <div class="flex flex-col flex-grow justify-between">
+                             <div>
+                                <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${gameData.title}</h3>
+                                <p class="text-gray-400 mb-4 h-24 overflow-hidden text-ellipsis">${gameData.description}</p>
+                             </div>
+                             <span class="font-semibold text-green-400 hover:text-white transition-colors mt-auto">In Steam öffnen &rarr;</span>
+                        </div>
                     </div>
                 `;
 
                 if (isClickable) {
-                    return `<a href="game.html?id=${gameId}" class="card-link block">${cardContent}</a>`;
+                    return `<a href="game.html?id=${gameId}" class="card-link block h-full">${cardContent}</a>`;
                 }
-                return `<div class="card-link block" onclick="window.open('${steamAppUrl}', '_self')">${cardContent}</div>`;
+                return `<div class="card-link block h-full" onclick="window.open('${steamAppUrl}', '_self')">${cardContent}</div>`;
             }
 
             onSnapshot(gamesCollection, (snapshot) => {
@@ -344,12 +357,12 @@
                 
                 docs.forEach(doc => {
                     const data = doc.data();
-                    data.id = doc.id; // Wichtig für den Link
+                    data.id = doc.id;
                     const tags = data.tags || [];
 
                     if (data.status === 'played') playedDocs.push(data);
                     else if (data.status === 'released') releasedDocs.push(data);
-                    else { // upcoming
+                    else { 
                         if (tags.includes('coop')) upcomingDocs.coop.push(data);
                         if (tags.includes('singleplayer')) upcomingDocs.singleplayer.push(data);
                         if (tags.includes('not_free')) upcomingDocs.not_free.push(data);
@@ -374,7 +387,7 @@
                         noGamesMsg.classList.remove('hidden'); continue;
                     }
                     
-                    const gameDataArray = (await Promise.all(docsForCategory.map(doc => fetchSteamGameData(doc.url).then(data => ({...data, id: doc.id}))))).filter(g => g.title);
+                    const gameDataArray = (await Promise.all(docsForCategory.map(doc => fetchSteamGameData(doc.url).then(data => (data ? {...data, id: doc.id} : null))))).filter(Boolean);
                     
                     let gridHtml = '';
                     gameDataArray.forEach((gameData, index) => {
@@ -401,7 +414,7 @@
                 }
                 
                 const uniqueDocs = Array.from(new Map(docs.map(doc => [doc.url, doc])).values());
-                const gameDataArray = (await Promise.all(uniqueDocs.map(doc => fetchSteamGameData(doc.url).then(data => ({...data, id: doc.id}))))).filter(g => g.title);
+                const gameDataArray = (await Promise.all(uniqueDocs.map(doc => fetchSteamGameData(doc.url).then(data => (data ? {...data, id: doc.id} : null))))).filter(Boolean);
                 
                 let gridHtml = '';
                 gameDataArray.forEach(gameData => {
