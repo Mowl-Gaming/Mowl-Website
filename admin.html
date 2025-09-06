@@ -90,7 +90,7 @@
         </div>
 
         <!-- Dashboard Section (hidden by default) -->
-        <div id="dashboard-section" class="hidden w-full max-w-6xl container mx-auto p-6">
+        <div id="dashboard-section" class="hidden w-full max-w-7xl container mx-auto p-6">
             <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-3xl font-orbitron font-bold text-glow-green">Dashboard</h1>
@@ -114,7 +114,7 @@
                     <div class="mb-4">
                         <input type="search" id="search-input" class="form-input w-full p-3 rounded" placeholder="Spiele suchen...">
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div id="upcoming-games-container" class="bg-gray-900/50 p-4 rounded-lg">
                             <h3 class="text-lg font-orbitron mb-4 text-center">Ausstehende Spiele</h3>
                             <div id="upcoming-games-list" class="space-y-3 min-h-[100px]"></div>
@@ -122,6 +122,10 @@
                         <div id="released-games-container" class="bg-gray-900/50 p-4 rounded-lg">
                             <h3 class="text-lg font-orbitron mb-4 text-center">Aktuelle Spiele</h3>
                             <div id="released-games-list" class="space-y-3 min-h-[100px]"></div>
+                        </div>
+                        <div id="played-games-container" class="bg-gray-900/50 p-4 rounded-lg">
+                            <h3 class="text-lg font-orbitron mb-4 text-center">Bereits gespielt</h3>
+                            <div id="played-games-list" class="space-y-3 min-h-[100px]"></div>
                         </div>
                     </div>
                 </div>
@@ -174,8 +178,10 @@
         
         const upcomingGamesContainer = document.getElementById('upcoming-games-container');
         const releasedGamesContainer = document.getElementById('released-games-container');
+        const playedGamesContainer = document.getElementById('played-games-container');
         const upcomingGamesList = document.getElementById('upcoming-games-list');
         const releasedGamesList = document.getElementById('released-games-list');
+        const playedGamesList = document.getElementById('played-games-list');
 
         const deleteModal = document.getElementById('delete-modal');
         const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
@@ -371,16 +377,21 @@
         function renderGames() {
             upcomingGamesList.innerHTML = '';
             releasedGamesList.innerHTML = '';
+            playedGamesList.innerHTML = '';
 
             const searchTerm = searchInput.value.toLowerCase();
             const filteredGames = gamesData.filter(game => (game.title || '').toLowerCase().includes(searchTerm));
 
             let upcomingEmpty = true;
             let releasedEmpty = true;
+            let playedEmpty = true;
 
             filteredGames.forEach(game => {
                 const gameEl = createGameElement(game);
-                if (game.status === 'released') {
+                if (game.status === 'played') {
+                    playedGamesList.appendChild(gameEl);
+                    playedEmpty = false;
+                } else if (game.status === 'released') {
                     releasedGamesList.appendChild(gameEl);
                     releasedEmpty = false;
                 } else {
@@ -391,6 +402,7 @@
 
             if (upcomingEmpty) upcomingGamesList.innerHTML = `<p class="text-gray-600 text-center p-4">${searchTerm ? 'Keine passenden Spiele' : 'Keine Spiele in dieser Sektion'}</p>`;
             if (releasedEmpty) releasedGamesList.innerHTML = `<p class="text-gray-600 text-center p-4">${searchTerm ? 'Keine passenden Spiele' : 'Keine Spiele in dieser Sektion'}</p>`;
+            if (playedEmpty) playedGamesList.innerHTML = `<p class="text-gray-600 text-center p-4">${searchTerm ? 'Keine passenden Spiele' : 'Keine Spiele in dieser Sektion'}</p>`;
         }
 
         function loadGames() {
@@ -431,7 +443,7 @@
                 }
             });
 
-            [upcomingGamesContainer, releasedGamesContainer].forEach(container => {
+            [upcomingGamesContainer, releasedGamesContainer, playedGamesContainer].forEach(container => {
                 container.addEventListener('dragover', e => {
                     e.preventDefault();
                     container.classList.add('bg-green-500/10');
@@ -441,7 +453,10 @@
                     e.preventDefault();
                     container.classList.remove('bg-green-500/10');
                     const gameId = e.dataTransfer.getData('text/plain');
-                    const newStatus = container.id === 'released-games-container' ? 'released' : 'upcoming';
+                    let newStatus = 'upcoming';
+                    if (container.id === 'released-games-container') newStatus = 'released';
+                    if (container.id === 'played-games-container') newStatus = 'played';
+                    
                     const docRef = doc(db, "upcoming-games", gameId);
                     await updateDoc(docRef, { status: newStatus });
                 });
