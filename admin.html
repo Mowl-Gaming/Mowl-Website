@@ -35,15 +35,19 @@
         .btn-cyber:hover, .btn-cyber:disabled { color: #0a0a1a; background-color: #4ade80; box-shadow: var(--glow-green); }
         .btn-cyber:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-cyber:hover::before { left: 100%; }
-        .form-input {
+        .form-input, .status-select {
             background: rgba(10, 10, 26, 0.8);
             border: 1px solid rgba(74, 222, 128, 0.4);
             color: #e0e0e0;
         }
-        .form-input:focus {
+        .form-input:focus, .status-select:focus {
             outline: none;
             border-color: #4ade80;
             box-shadow: var(--glow-green);
+        }
+        .status-select option {
+            background-color: #0a0a1a;
+            color: #e0e0e0;
         }
         .loader {
             border: 4px solid rgba(255, 255, 255, 0.2);
@@ -65,11 +69,13 @@
             content: '✓'; font-size: 1rem; color: #0a0a1a;
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
         }
-        .game-card { transition: background-color 0.2s ease; }
-        .game-card:hover { background-color: rgba(74, 222, 128, 0.1); }
-
-        .modal {
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+        .modal { transition: opacity 0.3s ease, visibility 0.3s ease; }
+        table tbody tr { transition: background-color 0.2s ease; }
+        table tbody tr:hover { background-color: rgba(74, 222, 128, 0.05); }
+        
+        #drop-zone.drag-over {
+            border-color: #4ade80;
+            box-shadow: var(--glow-green);
         }
     </style>
 </head>
@@ -101,37 +107,39 @@
                     <button id="logout-btn" class="text-gray-400 hover:text-green-400 text-sm">Abmelden</button>
                 </div>
                 
-                <div class="mb-8">
-                    <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
-                    <div class="flex items-center space-x-2">
-                        <input type="text" id="steam-url-input" class="form-input w-full p-3 rounded" placeholder="Steam URL oder Spielname..." autocomplete="off">
-                        <button id="add-game-btn" class="btn-cyber py-3 px-6 font-bold flex items-center justify-center shrink-0">
-                            <span id="add-game-text">Hinzufügen</span>
-                            <div id="add-game-loader" class="loader hidden"></div>
-                        </button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="steam-url-input" class="form-input w-full p-3 rounded" placeholder="Steam URL oder Spielname..." autocomplete="off">
+                            <button id="add-game-btn" class="btn-cyber py-3 px-6 font-bold flex items-center justify-center shrink-0">
+                                <span id="add-game-text">Hinzufügen</span>
+                                <div id="add-game-loader" class="loader hidden"></div>
+                            </button>
+                        </div>
+                         <p id="add-game-error" class="text-red-500 mt-2 h-4 text-sm"></p>
                     </div>
-                     <p id="add-game-error" class="text-red-500 mt-2 h-4 text-sm"></p>
-                </div>
-
-                <div>
-                    <h2 class="text-xl font-orbitron mb-4">Spiele verwalten</h2>
-                    <div class="mb-4">
+                    <div>
+                        <h2 class="text-xl font-orbitron mb-4">Spiele filtern</h2>
                         <input type="search" id="search-input" class="form-input w-full p-3 rounded" placeholder="Spiele suchen...">
                     </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div id="upcoming-games-container" class="bg-gray-900/50 p-4 rounded-lg">
-                            <h3 class="text-lg font-orbitron mb-4 text-center">Ausstehende Spiele</h3>
-                            <div id="upcoming-games-list" class="space-y-3 min-h-[100px]"></div>
-                        </div>
-                        <div id="released-games-container" class="bg-gray-900/50 p-4 rounded-lg">
-                            <h3 class="text-lg font-orbitron mb-4 text-center">Aktuelle Spiele</h3>
-                            <div id="released-games-list" class="space-y-3 min-h-[100px]"></div>
-                        </div>
-                        <div id="played-games-container" class="bg-gray-900/50 p-4 rounded-lg">
-                            <h3 class="text-lg font-orbitron mb-4 text-center">Bereits gespielt</h3>
-                            <div id="played-games-list" class="space-y-3 min-h-[100px]"></div>
-                        </div>
-                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="border-b border-green-500/20">
+                            <tr>
+                                <th class="p-4 font-orbitron">Titel</th>
+                                <th class="p-4 font-orbitron">Status</th>
+                                <th class="p-4 font-orbitron">Kategorien</th>
+                                <th class="p-4 font-orbitron text-right">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="games-table-body">
+                            <!-- Game rows will be generated by JS -->
+                        </tbody>
+                    </table>
+                     <p id="no-games-message" class="text-gray-600 text-center p-8 hidden">Keine Spiele gefunden.</p>
                 </div>
             </div>
         </div>
@@ -152,14 +160,14 @@
         <div class="bg-gray-900/80 border border-green-500/50 p-8 rounded-lg shadow-lg max-w-3xl w-full mx-4 relative">
              <button id="close-image-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl">&times;</button>
              <h2 id="image-modal-title" class="text-2xl font-orbitron mb-6 text-glow-green">Bilder verwalten</h2>
-             <div class="mb-4">
-                 <input type="file" id="image-upload-input" accept="image/*" class="form-input w-full p-2">
-                 <button id="upload-image-btn" class="btn-cyber mt-2 w-full py-2">Bild hochladen</button>
+             <div id="drop-zone" class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-green-500 transition-colors mb-4">
+                <p class="text-gray-400">Bilder hierher ziehen oder</p>
+                <label for="image-upload-input" class="text-green-400 font-semibold cursor-pointer hover:underline">eine Datei auswählen</label>
+                <input type="file" id="image-upload-input" accept="image/*" class="hidden" multiple>
              </div>
              <div id="image-gallery" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-[400px] overflow-y-auto"></div>
         </div>
     </div>
-
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -194,12 +202,8 @@
         const addGameLoader = document.getElementById('add-game-loader');
         const addGameError = document.getElementById('add-game-error');
         const searchInput = document.getElementById('search-input');
-        const upcomingGamesContainer = document.getElementById('upcoming-games-container');
-        const releasedGamesContainer = document.getElementById('released-games-container');
-        const playedGamesContainer = document.getElementById('played-games-container');
-        const upcomingGamesList = document.getElementById('upcoming-games-list');
-        const releasedGamesList = document.getElementById('released-games-list');
-        const playedGamesList = document.getElementById('played-games-list');
+        const gamesTableBody = document.getElementById('games-table-body');
+        const noGamesMessage = document.getElementById('no-games-message');
         const deleteModal = document.getElementById('delete-modal');
         const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
         const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
@@ -208,7 +212,7 @@
         const closeImageModalBtn = document.getElementById('close-image-modal');
         const imageModalTitle = document.getElementById('image-modal-title');
         const imageUploadInput = document.getElementById('image-upload-input');
-        const uploadImageBtn = document.getElementById('upload-image-btn');
+        const dropZone = document.getElementById('drop-zone');
         const imageGallery = document.getElementById('image-gallery');
         
         let gameToDeleteId = null;
@@ -320,6 +324,11 @@
             deleteModal.classList.remove('hidden');
         }
 
+        async function handleStatusChange(gameId, newStatus) {
+            const docRef = doc(db, "upcoming-games", gameId);
+            await updateDoc(docRef, { status: newStatus });
+        }
+
         async function handleTagChange(gameId, tag, isChecked) {
             const docRef = doc(db, "upcoming-games", gameId);
             const game = gamesData.find(g => g.id === gameId);
@@ -333,82 +342,64 @@
             await updateDoc(docRef, { tags: Array.from(currentTags) });
         }
 
-        function createGameElement(game) {
-            const gameEl = document.createElement('div');
-            gameEl.className = 'game-card bg-gray-900/50 p-4 rounded-lg';
-            gameEl.draggable = true;
-            gameEl.dataset.id = game.id;
-            
-            const title = game.title || game.url.split('/')[5]?.replace(/_/g, ' ') || 'Unbekanntes Spiel';
-
-            gameEl.innerHTML = `
-                <div class="cursor-grab flex-grow">
-                    <p class="font-bold truncate">${title}</p>
-                    <div class="flex items-center space-x-4 mt-2">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" data-tag="coop" class="custom-checkbox" ${game.tags?.includes('coop') ? 'checked' : ''}>
-                            <span class="text-sm text-gray-400">Coop</span>
-                        </label>
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" data-tag="singleplayer" class="custom-checkbox" ${game.tags?.includes('singleplayer') ? 'checked' : ''}>
-                            <span class="text-sm text-gray-400">Singleplayer</span>
-                        </label>
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" data-tag="not_free" class="custom-checkbox" ${game.tags?.includes('not_free') ? 'checked' : ''}>
-                            <span class="text-sm text-gray-400">Not Free</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="flex flex-col space-y-2">
-                     <button class="manage-images-btn text-blue-400 hover:text-blue-300 text-sm">Bilder</button>
-                     <button class="remove-game-btn text-red-500 hover:text-red-400 font-bold text-sm">&times; Löschen</button>
-                </div>
-            `;
-            const contentWrapper = document.createElement('div');
-            contentWrapper.className = 'flex items-center justify-between';
-            contentWrapper.innerHTML = gameEl.innerHTML;
-            gameEl.innerHTML = '';
-            gameEl.appendChild(contentWrapper);
-
-            gameEl.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.addEventListener('change', (e) => handleTagChange(game.id, e.target.dataset.tag, e.target.checked));
-            });
-            gameEl.querySelector('.remove-game-btn').addEventListener('click', () => showDeleteConfirmation(game.id, title));
-            gameEl.querySelector('.manage-images-btn').addEventListener('click', () => openImageManager(game.id, title));
-
-            gameEl.addEventListener('dragstart', e => {
-                e.dataTransfer.setData('text/plain', game.id);
-                setTimeout(() => gameEl.classList.add('opacity-50'), 0);
-            });
-            gameEl.addEventListener('dragend', () => gameEl.classList.remove('opacity-50'));
-
-            return gameEl;
-        }
-
         function renderGames() {
-            upcomingGamesList.innerHTML = '';
-            releasedGamesList.innerHTML = '';
-            playedGamesList.innerHTML = '';
-
+            gamesTableBody.innerHTML = '';
             const searchTerm = searchInput.value.toLowerCase();
             const filteredGames = gamesData.filter(game => (game.title || '').toLowerCase().includes(searchTerm));
 
-            let upcomingEmpty = true, releasedEmpty = true, playedEmpty = true;
+            if (filteredGames.length === 0) {
+                noGamesMessage.classList.remove('hidden');
+                noGamesMessage.textContent = searchTerm ? 'Keine passenden Spiele gefunden.' : 'Noch keine Spiele hinzugefügt.';
+                return;
+            }
+            noGamesMessage.classList.add('hidden');
 
             filteredGames.forEach(game => {
-                const gameEl = createGameElement(game);
-                if (game.status === 'played') {
-                    playedGamesList.appendChild(gameEl); playedEmpty = false;
-                } else if (game.status === 'released') {
-                    releasedGamesList.appendChild(gameEl); releasedEmpty = false;
-                } else {
-                    upcomingGamesList.appendChild(gameEl); upcomingEmpty = false;
-                }
-            });
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-800';
+                const title = game.title || 'Unbekanntes Spiel';
+                
+                row.innerHTML = `
+                    <td class="p-4 font-bold">${title}</td>
+                    <td class="p-4">
+                        <select class="status-select p-2 rounded w-full">
+                            <option value="upcoming" ${game.status === 'upcoming' ? 'selected' : ''}>Ausstehend</option>
+                            <option value="released" ${game.status === 'released' ? 'selected' : ''}>Aktuell</option>
+                            <option value="played" ${game.status === 'played' ? 'selected' : ''}>Gespielt</option>
+                        </select>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-tag="coop" class="custom-checkbox" ${game.tags?.includes('coop') ? 'checked' : ''}>
+                                <span class="text-sm">Coop</span>
+                            </label>
+                             <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-tag="singleplayer" class="custom-checkbox" ${game.tags?.includes('singleplayer') ? 'checked' : ''}>
+                                <span class="text-sm">Singleplayer</span>
+                            </label>
+                             <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-tag="not_free" class="custom-checkbox" ${game.tags?.includes('not_free') ? 'checked' : ''}>
+                                <span class="text-sm">Not Free</span>
+                            </label>
+                        </div>
+                    </td>
+                    <td class="p-4 text-right">
+                        <div class="flex justify-end items-center space-x-2">
+                             <button class="manage-images-btn text-blue-400 hover:text-blue-300 text-sm font-semibold">Bilder</button>
+                             <button class="remove-game-btn text-red-500 hover:text-red-400 font-bold text-2xl">&times;</button>
+                        </div>
+                    </td>
+                `;
+                gamesTableBody.appendChild(row);
 
-            if (upcomingEmpty) upcomingGamesList.innerHTML = `<p class="text-gray-600 text-center p-4">${searchTerm ? 'Keine passenden Spiele' : 'Keine Spiele in dieser Sektion'}</p>`;
-            if (releasedEmpty) releasedGamesList.innerHTML = `<p class="text-gray-600 text-center p-4">${searchTerm ? 'Keine passenden Spiele' : 'Keine Spiele in dieser Sektion'}</p>`;
-            if (playedEmpty) playedGamesList.innerHTML = `<p class="text-gray-600 text-center p-4">${searchTerm ? 'Keine passenden Spiele' : 'Keine Spiele in dieser Sektion'}</p>`;
+                row.querySelector('.status-select').addEventListener('change', (e) => handleStatusChange(game.id, e.target.value));
+                row.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => handleTagChange(game.id, e.target.dataset.tag, e.target.checked));
+                });
+                row.querySelector('.manage-images-btn').addEventListener('click', () => openImageManager(game.id, title));
+                row.querySelector('.remove-game-btn').addEventListener('click', () => showDeleteConfirmation(game.id, title));
+            });
         }
 
         function loadGames() {
@@ -420,7 +411,6 @@
             });
         }
         
-        // Image Management
         function openImageManager(gameId, gameTitle) {
             activeGameIdForImages = gameId;
             imageModalTitle.textContent = `Bilder für "${gameTitle}"`;
@@ -430,7 +420,7 @@
         }
         
         function displayImagesInModal() {
-            imageGallery.innerHTML = '<div class="loader"></div>';
+            imageGallery.innerHTML = '<div class="loader mx-auto"></div>';
             const game = gamesData.find(g => g.id === activeGameIdForImages);
             const images = game?.memoryImages || [];
             imageGallery.innerHTML = '';
@@ -440,38 +430,28 @@
             }
             images.forEach(imgData => {
                 const imgContainer = document.createElement('div');
-                imgContainer.className = 'relative';
+                imgContainer.className = 'relative group';
                 imgContainer.innerHTML = `
                     <img src="${imgData.url}" class="w-full h-32 object-cover rounded">
-                    <button data-path="${imgData.path}" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">&times;</button>
+                    <button data-path="${imgData.path}" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
                 `;
                 imageGallery.appendChild(imgContainer);
                 imgContainer.querySelector('button').addEventListener('click', () => handleImageDelete(imgData));
             });
         }
         
-        async function handleImageUpload() {
-            const file = imageUploadInput.files[0];
+        async function uploadFile(file) {
             if (!file || !activeGameIdForImages) return;
-
-            uploadImageBtn.disabled = true;
             const filePath = `games/${activeGameIdForImages}/${Date.now()}_${file.name}`;
             const storageRef = ref(storage, filePath);
-
             try {
                 await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(storageRef);
                 const docRef = doc(db, "upcoming-games", activeGameIdForImages);
-                await updateDoc(docRef, {
-                    memoryImages: arrayUnion({ url: downloadURL, path: filePath })
-                });
-                // No need to call displayImagesInModal() here, onSnapshot will handle the update
+                await updateDoc(docRef, { memoryImages: arrayUnion({ url: downloadURL, path: filePath }) });
             } catch (error) {
                 console.error("Image upload failed:", error);
                 alert("Fehler beim Hochladen des Bildes.");
-            } finally {
-                imageUploadInput.value = '';
-                uploadImageBtn.disabled = false;
             }
         }
         
@@ -481,16 +461,13 @@
              const docRef = doc(db, "upcoming-games", activeGameIdForImages);
              try {
                 await deleteObject(storageRef);
-                await updateDoc(docRef, {
-                    memoryImages: arrayRemove(imgData)
-                });
+                await updateDoc(docRef, { memoryImages: arrayRemove(imgData) });
              } catch(error) {
                 console.error("Image delete failed:", error);
                 alert("Fehler beim Löschen des Bildes.");
              }
         }
 
-        // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem(SESSION_KEY) === 'true') showDashboard();
 
@@ -510,30 +487,38 @@
             });
             
             closeImageModalBtn.addEventListener('click', () => imageModal.classList.add('hidden'));
-            uploadImageBtn.addEventListener('click', handleImageUpload);
-            
-            onSnapshot(gamesCollection, (snapshot) => {
-                gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                gamesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-                renderGames();
-                // If image modal is open, refresh its content
-                if (activeGameIdForImages && !imageModal.classList.contains('hidden')) {
-                    displayImagesInModal();
+            imageUploadInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    uploadFile(e.target.files[0]);
                 }
             });
 
-            [upcomingGamesContainer, releasedGamesContainer, playedGamesContainer].forEach(container => {
-                container.addEventListener('dragover', e => { e.preventDefault(); container.classList.add('bg-green-500/10'); });
-                container.addEventListener('dragleave', () => container.classList.remove('bg-green-500/10'));
-                container.addEventListener('drop', async e => {
+            // Drag and Drop Logic
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, e => {
                     e.preventDefault();
-                    container.classList.remove('bg-green-500/10');
-                    const gameId = e.dataTransfer.getData('text/plain');
-                    let newStatus = 'upcoming';
-                    if (container.id === 'released-games-container') newStatus = 'released';
-                    if (container.id === 'played-games-container') newStatus = 'played';
-                    await updateDoc(doc(db, "upcoming-games", gameId), { status: newStatus });
+                    e.stopPropagation();
                 });
+            });
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'));
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'));
+            });
+            dropZone.addEventListener('drop', e => {
+                if (e.dataTransfer.files.length > 0) {
+                    uploadFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            onSnapshot(collection(db, "upcoming-games"), (snapshot) => {
+                gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                gamesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                renderGames();
+                if (activeGameIdForImages && !imageModal.classList.contains('hidden')) {
+                    displayImagesInModal();
+                }
             });
         });
     </script>
