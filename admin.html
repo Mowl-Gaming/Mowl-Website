@@ -54,31 +54,15 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        /* Custom Checkbox */
         .custom-checkbox {
-            appearance: none;
-            background-color: #1a1a3a;
-            border: 1px solid #4a5568;
-            border-radius: 4px;
-            width: 1.25rem;
-            height: 1.25rem;
-            display: inline-block;
-            position: relative;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
+            appearance: none; background-color: #1a1a3a; border: 1px solid #4a5568;
+            border-radius: 4px; width: 1.25rem; height: 1.25rem;
+            display: inline-block; position: relative; cursor: pointer; transition: background-color 0.2s ease;
         }
-        .custom-checkbox:checked {
-            background-color: #4ade80;
-            border-color: #4ade80;
-        }
+        .custom-checkbox:checked { background-color: #4ade80; border-color: #4ade80; }
         .custom-checkbox:checked::after {
-            content: '✓';
-            font-size: 1rem;
-            color: #0a0a1a;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            content: '✓'; font-size: 1rem; color: #0a0a1a;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
         }
     </style>
 </head>
@@ -102,7 +86,6 @@
                 <button id="logout-btn" class="text-gray-400 hover:text-green-400 text-sm">Abmelden</button>
             </div>
             
-            <!-- Add Game Form -->
             <div class="mb-8">
                 <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
                 <div class="flex items-center space-x-2">
@@ -115,12 +98,20 @@
                  <p id="add-game-error" class="text-red-500 mt-2 h-4 text-sm"></p>
             </div>
 
-            <!-- Games List -->
             <div>
                 <h2 class="text-xl font-orbitron mb-4">Spiele verwalten</h2>
-                <div id="games-list" class="space-y-4">
-                    <!-- Games will be populated here -->
-                </div>
+                <div id="games-list" class="space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
+        <div class="bg-gray-900/80 border border-red-500/50 p-8 rounded-lg text-center shadow-lg max-w-sm w-full mx-4">
+            <p id="delete-modal-text" class="mb-6 text-lg">Dieses Spiel wirklich löschen?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-delete-btn" class="btn-cyber bg-red-600 border-red-600 text-white hover:bg-red-500 px-6 py-2">Löschen</button>
+                <button id="cancel-delete-btn" class="btn-cyber px-6 py-2">Abbrechen</button>
             </div>
         </div>
     </div>
@@ -129,7 +120,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- WICHTIG: Deine Firebase Konfiguration hier einfügen! ---
         const firebaseConfig = {
             apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
             authDomain: "mowl-website.firebaseapp.com",
@@ -144,7 +134,6 @@
         const db = getFirestore(app);
         const gamesCollection = collection(db, "upcoming-games");
 
-        // --- DOM Elements ---
         const loginSection = document.getElementById('login-section');
         const dashboardSection = document.getElementById('dashboard-section');
         const passwordInput = document.getElementById('password-input');
@@ -159,7 +148,13 @@
         const addGameError = document.getElementById('add-game-error');
         const gamesList = document.getElementById('games-list');
 
-        // --- Authentication ---
+        const deleteModal = document.getElementById('delete-modal');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+        const deleteModalText = document.getElementById('delete-modal-text');
+        
+        let gameToDeleteId = null;
+
         const SESSION_KEY = 'mowl-admin-auth';
 
         async function sha256(message) {
@@ -172,7 +167,6 @@
         async function handleLogin() {
             const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d'; // "mowladmin"
             const enteredHash = await sha256(passwordInput.value);
-
             if (enteredHash === storedHash) {
                 sessionStorage.setItem(SESSION_KEY, 'true');
                 showDashboard();
@@ -193,8 +187,6 @@
             dashboardSection.classList.remove('hidden');
             loadGames();
         }
-
-        // --- Game Management ---
         
         async function fetchAndParseSteamPage(steamUrl) {
             const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(steamUrl)}`;
@@ -206,7 +198,6 @@
             const tags = new Set();
             doc.querySelectorAll('.app_tag').forEach(tagEl => {
                 const tag = tagEl.textContent.trim().toLowerCase();
-                // Check for English and German tags
                 if (tag.includes('co-op') || tag.includes('multiplayer') || tag.includes('mehrspieler') || tag.includes('ko-op')) {
                     tags.add('coop');
                 }
@@ -219,31 +210,22 @@
             if (price && !price.textContent.toLowerCase().includes('free') && !price.textContent.toLowerCase().includes('kostenlos')) {
                 tags.add('not_free');
             }
-            
             const title = doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel';
-
             return { tags: Array.from(tags), title };
         }
 
         async function handleAddGame() {
             const url = steamUrlInput.value.trim();
             if (!url.startsWith('https://store.steampowered.com/app/')) {
-                addGameError.textContent = 'Bitte eine gültige Steam App URL eingeben.';
-                return;
+                addGameError.textContent = 'Bitte eine gültige Steam App URL eingeben.'; return;
             }
-
             addGameBtn.disabled = true;
             addGameText.classList.add('hidden');
             addGameLoader.classList.remove('hidden');
             addGameError.textContent = '';
-
             try {
                 const { tags, title } = await fetchAndParseSteamPage(url);
-                await addDoc(gamesCollection, {
-                    url: url,
-                    title: title, // Store title for easier management
-                    tags: tags 
-                });
+                await addDoc(gamesCollection, { url, title, tags });
                 steamUrlInput.value = '';
             } catch (error) {
                 console.error("Error adding game:", error);
@@ -255,43 +237,44 @@
             }
         }
 
-        async function handleDeleteGame(gameId) {
-            if (confirm('Dieses Spiel wirklich löschen?')) {
-                await deleteDoc(doc(db, "upcoming-games", gameId));
-            }
+        function showDeleteConfirmation(gameId, gameTitle) {
+            gameToDeleteId = gameId;
+            deleteModalText.textContent = `Spiel "${gameTitle}" wirklich löschen?`;
+            deleteModal.classList.remove('hidden');
         }
 
         async function handleTagChange(gameId, tag, isChecked) {
             const docRef = doc(db, "upcoming-games", gameId);
             const game = gamesData.find(g => g.id === gameId);
             if (!game) return;
-
             const currentTags = new Set(game.tags);
             if (isChecked) {
                 currentTags.add(tag);
             } else {
                 currentTags.delete(tag);
             }
-            
             await updateDoc(docRef, { tags: Array.from(currentTags) });
         }
         
-        let gamesData = []; // Cache for tag updates
+        let gamesData = [];
 
         function loadGames() {
             onSnapshot(gamesCollection, (snapshot) => {
-                gamesList.innerHTML = ''; // Clear list
+                gamesList.innerHTML = '';
                 gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                 if (gamesData.length === 0) {
                      gamesList.innerHTML = '<p class="text-gray-600">Noch keine Spiele hinzugefügt.</p>';
+                     return;
                 }
 
-                gamesData.sort((a,b) => a.title.localeCompare(b.title)).forEach(game => {
+                // *** FIX: Safer sorting to prevent errors ***
+                gamesData.sort((a,b) => (a.title || '').localeCompare(b.title || ''));
+
+                gamesData.forEach(game => {
                     const gameEl = document.createElement('div');
                     gameEl.className = 'bg-gray-900/50 p-4 rounded-lg flex items-center justify-between';
-                    
-                    const title = game.title || game.url.split('/')[5].replace(/_/g, ' ') || 'Unbekanntes Spiel';
+                    const title = game.title || game.url.split('/')[5]?.replace(/_/g, ' ') || 'Unbekanntes Spiel';
 
                     gameEl.innerHTML = `
                         <div>
@@ -311,35 +294,38 @@
                                 </label>
                             </div>
                         </div>
-                        <button data-id="${game.id}" class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-3 py-1">&times; Löschen</button>
+                        <button class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-3 py-1">&times; Löschen</button>
                     `;
                     gamesList.appendChild(gameEl);
 
-                    // Add event listeners for checkboxes and delete button
                     gameEl.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                        checkbox.addEventListener('change', (e) => {
-                           handleTagChange(game.id, e.target.dataset.tag, e.target.checked);
-                        });
+                        checkbox.addEventListener('change', (e) => handleTagChange(game.id, e.target.dataset.tag, e.target.checked));
                     });
-                    gameEl.querySelector('.remove-game-btn').addEventListener('click', () => {
-                        handleDeleteGame(game.id);
-                    });
+                    gameEl.querySelector('.remove-game-btn').addEventListener('click', () => showDeleteConfirmation(game.id, title));
                 });
             });
         }
 
-        // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem(SESSION_KEY) === 'true') {
                 showDashboard();
             }
-
             loginBtn.addEventListener('click', handleLogin);
-            passwordInput.addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') handleLogin();
-            });
+            passwordInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleLogin(); });
             logoutBtn.addEventListener('click', handleLogout);
             addGameBtn.addEventListener('click', handleAddGame);
+
+            cancelDeleteBtn.addEventListener('click', () => {
+                deleteModal.classList.add('hidden');
+                gameToDeleteId = null;
+            });
+            confirmDeleteBtn.addEventListener('click', async () => {
+                if(gameToDeleteId) {
+                    await deleteDoc(doc(db, "upcoming-games", gameToDeleteId));
+                    deleteModal.classList.add('hidden');
+                    gameToDeleteId = null;
+                }
+            });
         });
     </script>
 </body>
