@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spieldetails - Mowl</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230a0a1a'/><path d='M20 80V20 H35 L50 45 L65 20 H80 V80 H65 V40 L50 65 L35 40 V80 Z' fill='%234ade80'/></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glow-green: 0 0 5px rgba(74, 222, 128, 0.8), 0 0 10px rgba(74, 222, 128, 0.6), 0 0 20px rgba(74, 222, 128, 0.4), 0 0 40px rgba(74, 222, 128, 0.2);
+        }
+        body {
+            background-color: #0a0a1a;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            background-image:
+                radial-gradient(circle at 1% 1%, #1a1a3a 1px, transparent 2px),
+                radial-gradient(circle at 99% 99%, #1a1a3a 1px, transparent 2px);
+            background-size: 30px 30px;
+        }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .text-glow-green { text-shadow: var(--glow-green); }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-left-color: #4ade80;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-lg">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-3xl font-bold font-orbitron text-glow-green cursor-pointer">MOWL</a>
+            <a href="index.html#games" class="text-lg hover:text-green-400">&larr; Zurück zur Übersicht</a>
+        </div>
+    </header>
+
+    <main id="content-container" class="container mx-auto px-6 pt-32 pb-20 text-center">
+        <div id="loader" class="flex justify-center items-center h-64">
+            <div class="loader"></div>
+        </div>
+        <!-- Content will be injected here -->
+    </main>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
+            authDomain: "mowl-website.firebaseapp.com",
+            projectId: "mowl-website",
+            storageBucket: "mowl-website.appspot.com",
+            messagingSenderId: "181578753317",
+            appId: "1:181578753317:web:f44567dd561d8e7a37a6cc",
+            measurementId: "G-9F6YC5NLCS"
+        };
+      
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const contentContainer = document.getElementById('content-container');
+        const loader = document.getElementById('loader');
+
+        async function fetchSteamGameData(steamUrl) {
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(steamUrl)}`;
+            try {
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`Network response was not ok`);
+                const data = await response.json();
+                const htmlText = data.contents;
+                const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+                return {
+                     title: doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel',
+                     description: doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.',
+                     image: doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt',
+                     url: steamUrl
+                };
+            } catch (error) {
+                console.error("Failed to fetch Steam game data:", error);
+                return null;
+            }
+        }
+
+        async function loadGameDetails() {
+            const params = new URLSearchParams(window.location.search);
+            const gameId = params.get('id');
+
+            if (!gameId) {
+                contentContainer.innerHTML = '<p class="text-red-500">Keine Spiel-ID gefunden.</p>';
+                return;
+            }
+
+            const docRef = doc(db, "upcoming-games", gameId);
+            const docSnap = await getDoc(docRef);
+
+            if (!docSnap.exists()) {
+                contentContainer.innerHTML = '<p class="text-red-500">Spiel nicht in der Datenbank gefunden.</p>';
+                return;
+            }
+
+            const firestoreData = docSnap.data();
+            const steamData = await fetchSteamGameData(firestoreData.url);
+
+            if (!steamData) {
+                 contentContainer.innerHTML = '<p class="text-red-500">Spieldetails konnten nicht von Steam geladen werden.</p>';
+                 return;
+            }
+            
+            document.title = `${steamData.title} - Mowl`;
+            renderPage(steamData, firestoreData);
+        }
+
+        function renderPage(steamData, firestoreData) {
+            let galleryHtml = '';
+            const images = firestoreData.memoryImages || [];
+
+            if (images.length > 0) {
+                images.forEach(img => {
+                    galleryHtml += `
+                        <div class="overflow-hidden rounded-lg">
+                            <img src="${img.url}" alt="Erinnerung für ${steamData.title}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300">
+                        </div>
+                    `;
+                });
+            } else {
+                galleryHtml = '<p class="text-gray-500 md:col-span-2 lg:col-span-3 text-center">Für dieses Spiel wurden noch keine Erinnerungen hochgeladen.</p>';
+            }
+
+
+            const pageHtml = `
+                <div class="max-w-5xl mx-auto">
+                    <img src="${steamData.image}" alt="${steamData.title}" class="w-full h-64 md:h-96 object-cover rounded-lg mb-8 border-2 border-green-500/30">
+                    <h1 class="text-5xl font-orbitron font-bold mb-4 text-glow-green">${steamData.title}</h1>
+                    <p class="text-lg text-gray-400 max-w-3xl mx-auto mb-12">${steamData.description}</p>
+                    
+                    <h2 class="text-4xl font-orbitron font-bold mb-8 border-t border-green-500/20 pt-12">Erinnerungen</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${galleryHtml}
+                    </div>
+                </div>
+            `;
+            loader.style.display = 'none';
+            contentContainer.innerHTML = pageHtml;
+        }
+
+        document.addEventListener('DOMContentLoaded', loadGameDetails);
+    </script>
+</body>
+</html>
