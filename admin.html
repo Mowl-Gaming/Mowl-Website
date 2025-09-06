@@ -465,7 +465,7 @@
                 await updateDoc(docRef, {
                     memoryImages: arrayUnion({ url: downloadURL, path: filePath })
                 });
-                displayImagesInModal(); // Refresh
+                // No need to call displayImagesInModal() here, onSnapshot will handle the update
             } catch (error) {
                 console.error("Image upload failed:", error);
                 alert("Fehler beim Hochladen des Bildes.");
@@ -484,7 +484,6 @@
                 await updateDoc(docRef, {
                     memoryImages: arrayRemove(imgData)
                 });
-                displayImagesInModal();
              } catch(error) {
                 console.error("Image delete failed:", error);
                 alert("Fehler beim Löschen des Bildes.");
@@ -512,6 +511,16 @@
             
             closeImageModalBtn.addEventListener('click', () => imageModal.classList.add('hidden'));
             uploadImageBtn.addEventListener('click', handleImageUpload);
+            
+            onSnapshot(gamesCollection, (snapshot) => {
+                gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                gamesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                renderGames();
+                // If image modal is open, refresh its content
+                if (activeGameIdForImages && !imageModal.classList.contains('hidden')) {
+                    displayImagesInModal();
+                }
+            });
 
             [upcomingGamesContainer, releasedGamesContainer, playedGamesContainer].forEach(container => {
                 container.addEventListener('dragover', e => { e.preventDefault(); container.classList.add('bg-green-500/10'); });
@@ -530,3 +539,4 @@
     </script>
 </body>
 </html>
+
