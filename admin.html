@@ -99,7 +99,7 @@
                 <div class="mb-8">
                     <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
                     <div class="flex items-center space-x-2">
-                        <input type="text" id="steam-url-input" class="form-input w-full p-3 rounded" placeholder="Steam Store URL...">
+                        <input type="text" id="steam-url-input" class="form-input w-full p-3 rounded" placeholder="Steam URL oder Spielname...">
                         <button id="add-game-btn" class="btn-cyber py-3 px-6 font-bold flex items-center justify-center shrink-0">
                             <span id="add-game-text">Hinzufügen</span>
                             <div id="add-game-loader" class="loader hidden"></div>
@@ -215,11 +215,25 @@
             dashboardSection.classList.remove('hidden');
             loadGames();
         }
+
+        async function searchSteamForGame(gameName) {
+            const searchUrl = `https://store.steampowered.com/search/results?term=${encodeURIComponent(gameName)}`;
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(searchUrl)}`;
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error('Steam-Suche ist fehlgeschlagen.');
+            const htmlText = await response.text();
+            const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+            const firstResult = doc.querySelector('a.search_result_row');
+            if (!firstResult) {
+                throw new Error(`Kein Spiel namens "${gameName}" gefunden.`);
+            }
+            return firstResult.href;
+        }
         
         async function fetchAndParseSteamPage(steamUrl) {
             const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(steamUrl)}`;
             const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error('Steam page fetch failed');
+            if (!response.ok) throw new Error('Steam-Seite konnte nicht geladen werden.');
             const htmlText = await response.text();
             const doc = new DOMParser().parseFromString(htmlText, 'text/html');
 
@@ -243,25 +257,36 @@
         }
 
         async function handleAddGame() {
-            const url = steamUrlInput.value.trim();
-            if (!url.startsWith('https://store.steampowered.com/app/')) {
-                addGameError.textContent = 'Bitte eine gültige Steam App URL eingeben.'; return;
-            }
-            if (gamesData.some(game => game.url === url)) {
-                addGameError.textContent = 'Dieses Spiel wurde bereits hinzugefügt.'; return;
+            const urlOrName = steamUrlInput.value.trim();
+            if (!urlOrName) {
+                 addGameError.textContent = 'Bitte eine URL oder einen Spielnamen eingeben.';
+                 return;
             }
 
             addGameBtn.disabled = true;
             addGameText.classList.add('hidden');
             addGameLoader.classList.remove('hidden');
             addGameError.textContent = '';
+
             try {
-                const { tags, title } = await fetchAndParseSteamPage(url);
-                await addDoc(gamesCollection, { url, title, tags, status: 'upcoming' });
+                let gameUrl;
+                if (urlOrName.startsWith('https://store.steampowered.com/app/')) {
+                    gameUrl = urlOrName;
+                } else {
+                    gameUrl = await searchSteamForGame(urlOrName);
+                }
+                
+                if (gamesData.some(game => game.url === gameUrl)) {
+                    throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
+                }
+
+                const { tags, title } = await fetchAndParseSteamPage(gameUrl);
+                await addDoc(gamesCollection, { url: gameUrl, title, tags, status: 'upcoming' });
                 steamUrlInput.value = '';
+
             } catch (error) {
                 console.error("Error adding game:", error);
-                addGameError.textContent = 'Spiel konnte nicht hinzugefügt werden.';
+                addGameError.textContent = error.message;
             } finally {
                 addGameBtn.disabled = false;
                 addGameText.classList.remove('hidden');
@@ -409,3 +434,4 @@
     </script>
 </body>
 </html>
+
