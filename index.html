@@ -36,6 +36,11 @@
         .btn-cyber:hover { color: #0a0a1a; background-color: #4ade80; box-shadow: var(--glow-green); }
         .btn-cyber:hover::before { left: 100%; }
 
+        .card-link {
+            display: block;
+            height: 100%;
+            transition: opacity 0.5s ease;
+        }
         .card-link .card { transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease; }
         .card-link:hover .card {
             transform: translateY(-10px);
@@ -45,9 +50,9 @@
             background: rgba(15, 15, 35, 0.5); backdrop-filter: blur(10px);
             border: 1px solid rgba(74, 222, 128, 0.2);
             position: relative; overflow: hidden;
-            display: flex; /* Neu */
-            flex-direction: column; /* Neu */
-            height: 100%; /* Neu */
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
         .card::before {
             content: ''; position: absolute; top: -50%; left: -50%;
@@ -328,7 +333,7 @@
                  const hiddenClass = isHidden ? 'hidden' : '';
                  
                  const cardContent = `
-                    <div class="card p-6 rounded-lg text-center ${hiddenClass}" data-url="${steamWebUrl}">
+                    <div class="card p-6 rounded-lg text-center">
                         <img src="${gameData.image}" alt="${gameData.title} Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
                         <div class="flex flex-col flex-grow justify-between">
                              <div>
@@ -340,10 +345,12 @@
                     </div>
                 `;
 
+                const wrapperClass = `card-link block h-full ${hiddenClass}`;
+
                 if (isClickable) {
-                    return `<a href="game.html?id=${gameId}" class="card-link block h-full">${cardContent}</a>`;
+                    return `<a href="game.html?id=${gameId}" class="${wrapperClass}">${cardContent}</a>`;
                 }
-                return `<div class="card-link block h-full" onclick="window.open('${steamAppUrl}', '_self')">${cardContent}</div>`;
+                return `<div class="${wrapperClass}" onclick="window.open('${steamAppUrl}', '_self')">${cardContent}</div>`;
             }
 
             onSnapshot(gamesCollection, (snapshot) => {
@@ -400,7 +407,7 @@
                         const newBtn = loadMoreBtn.cloneNode(true);
                         loadMoreBtn.parentNode.replaceChild(newBtn, loadMoreBtn);
                         newBtn.addEventListener('click', () => {
-                            grid.querySelectorAll('.card').forEach(card => card.parentElement.classList.remove('hidden'));
+                            grid.querySelectorAll('.card-link.hidden').forEach(cardWrapper => cardWrapper.classList.remove('hidden'));
                             newBtn.classList.add('hidden');
                         });
                     }
