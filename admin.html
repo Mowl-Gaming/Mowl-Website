@@ -54,7 +54,13 @@
         .drag-over { background-color: rgba(74, 222, 128, 0.1); }
     </style>
 </head>
-<body class="antialiased flex items-center justify-center min-h-screen">
+<body class="antialiased flex items-center justify-center min-h-screen pt-24">
+
+    <header class="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-lg border-b border-green-500/20">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-3xl font-orbitron font-bold text-glow-green">MOWL</a>
+        </nav>
+    </header>
 
     <div id="login-section" class="w-full max-w-md">
         <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg text-center">
@@ -90,7 +96,7 @@
                     <div id="upcoming-games-list" data-status="upcoming" class="drop-zone space-y-4 p-4 rounded-lg"></div>
                 </div>
                 <div>
-                    <h2 class="text-xl font-orbitron mb-4">Veröffentlichte Spiele</h2>
+                    <h2 class="text-xl font-orbitron mb-4">Aktuelle Spiele</h2>
                     <div id="released-games-list" data-status="released" class="drop-zone space-y-4 p-4 rounded-lg"></div>
                 </div>
             </div>
@@ -316,7 +322,7 @@
                 });
 
                 if (upcomingGamesList.innerHTML === '') upcomingGamesList.innerHTML = '<p class="text-gray-600 text-center p-4">Keine ausstehenden Spiele.</p>';
-                if (releasedGamesList.innerHTML === '') releasedGamesList.innerHTML = '<p class="text-gray-600 text-center p-4">Noch keine Spiele veröffentlicht.</p>';
+                if (releasedGamesList.innerHTML === '') releasedGamesList.innerHTML = '<p class="text-gray-600 text-center p-4">Noch keine aktuellen Spiele.</p>';
             });
         }
 
