@@ -219,6 +219,14 @@
             if (!url.startsWith('https://store.steampowered.com/app/')) {
                 addGameError.textContent = 'Bitte eine gültige Steam App URL eingeben.'; return;
             }
+
+            // Check for duplicates before proceeding
+            const isDuplicate = gamesData.some(game => game.url === url);
+            if (isDuplicate) {
+                addGameError.textContent = 'Dieses Spiel wurde bereits hinzugefügt.';
+                return;
+            }
+
             addGameBtn.disabled = true;
             addGameText.classList.add('hidden');
             addGameLoader.classList.remove('hidden');
@@ -330,3 +338,5 @@
     </script>
 </body>
 </html>
+
+
