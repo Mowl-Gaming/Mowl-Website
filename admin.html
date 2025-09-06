@@ -67,6 +67,10 @@
         }
         .game-card { transition: background-color 0.2s ease; }
         .game-card:hover { background-color: rgba(74, 222, 128, 0.1); }
+
+        .modal {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -133,8 +137,8 @@
         </div>
     </main>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="delete-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <!-- Modals -->
+    <div id="delete-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
         <div class="bg-gray-900/80 border border-red-500/50 p-8 rounded-lg text-center shadow-lg max-w-sm w-full mx-4">
             <p id="delete-modal-text" class="mb-6 text-lg">Dieses Spiel wirklich löschen?</p>
             <div class="flex justify-center space-x-4">
@@ -143,16 +147,30 @@
             </div>
         </div>
     </div>
+    
+    <div id="image-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
+        <div class="bg-gray-900/80 border border-green-500/50 p-8 rounded-lg shadow-lg max-w-3xl w-full mx-4 relative">
+             <button id="close-image-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl">&times;</button>
+             <h2 id="image-modal-title" class="text-2xl font-orbitron mb-6 text-glow-green">Bilder verwalten</h2>
+             <div class="mb-4">
+                 <input type="file" id="image-upload-input" accept="image/*" class="form-input w-full p-2">
+                 <button id="upload-image-btn" class="btn-cyber mt-2 w-full py-2">Bild hochladen</button>
+             </div>
+             <div id="image-gallery" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-[400px] overflow-y-auto"></div>
+        </div>
+    </div>
+
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, serverTimestamp, query, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
             authDomain: "mowl-website.firebaseapp.com",
             projectId: "mowl-website",
-            storageBucket: "mowl-website.firebasestorage.app",
+            storageBucket: "mowl-website.appspot.com",
             messagingSenderId: "181578753317",
             appId: "1:181578753317:web:f44567dd561d8e7a37a6cc",
             measurementId: "G-9F6YC5NLCS"
@@ -160,35 +178,41 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
         const gamesCollection = collection(db, "upcoming-games");
 
+        // DOM Elements
         const loginSection = document.getElementById('login-section');
         const dashboardSection = document.getElementById('dashboard-section');
         const passwordInput = document.getElementById('password-input');
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const errorMsg = document.getElementById('error-msg');
-        
         const steamUrlInput = document.getElementById('steam-url-input');
         const addGameBtn = document.getElementById('add-game-btn');
         const addGameText = document.getElementById('add-game-text');
         const addGameLoader = document.getElementById('add-game-loader');
         const addGameError = document.getElementById('add-game-error');
         const searchInput = document.getElementById('search-input');
-        
         const upcomingGamesContainer = document.getElementById('upcoming-games-container');
         const releasedGamesContainer = document.getElementById('released-games-container');
         const playedGamesContainer = document.getElementById('played-games-container');
         const upcomingGamesList = document.getElementById('upcoming-games-list');
         const releasedGamesList = document.getElementById('released-games-list');
         const playedGamesList = document.getElementById('played-games-list');
-
         const deleteModal = document.getElementById('delete-modal');
         const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
         const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
         const deleteModalText = document.getElementById('delete-modal-text');
+        const imageModal = document.getElementById('image-modal');
+        const closeImageModalBtn = document.getElementById('close-image-modal');
+        const imageModalTitle = document.getElementById('image-modal-title');
+        const imageUploadInput = document.getElementById('image-upload-input');
+        const uploadImageBtn = document.getElementById('upload-image-btn');
+        const imageGallery = document.getElementById('image-gallery');
         
         let gameToDeleteId = null;
+        let activeGameIdForImages = null;
         let gamesData = [];
         const SESSION_KEY = 'mowl-admin-auth';
 
@@ -200,7 +224,7 @@
         }
 
         async function handleLogin() {
-            const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d'; // "mowladmin"
+            const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d';
             const enteredHash = await sha256(passwordInput.value);
             if (enteredHash === storedHash) {
                 sessionStorage.setItem(SESSION_KEY, 'true');
@@ -233,9 +257,7 @@
             const htmlText = data.contents;
             const doc = new DOMParser().parseFromString(htmlText, 'text/html');
             const firstResult = doc.querySelector('a.search_result_row');
-            if (!firstResult) {
-                throw new Error(`Kein Spiel namens "${gameName}" gefunden.`);
-            }
+            if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" gefunden.`);
             return firstResult.href;
         }
 
@@ -249,18 +271,12 @@
             const tags = new Set();
             doc.querySelectorAll('.app_tag').forEach(tagEl => {
                 const tag = tagEl.textContent.trim().toLowerCase();
-                if (['co-op', 'multiplayer', 'mehrspieler', 'ko-op', 'online co-op', 'lan co-op'].some(t => tag.includes(t))) {
-                    tags.add('coop');
-                }
-                if (['single-player', 'einzelspieler'].some(t => tag.includes(t))) {
-                    tags.add('singleplayer');
-                }
+                if (['co-op', 'multiplayer', 'mehrspieler', 'ko-op', 'online co-op', 'lan co-op'].some(t => tag.includes(t))) tags.add('coop');
+                if (['single-player', 'einzelspieler'].some(t => tag.includes(t))) tags.add('singleplayer');
             });
             
             const price = doc.querySelector('.game_purchase_price, .discount_final_price');
-            if (price && !price.textContent.toLowerCase().includes('free') && !price.textContent.toLowerCase().includes('kostenlos')) {
-                tags.add('not_free');
-            }
+            if (price && !price.textContent.toLowerCase().includes('free') && !price.textContent.toLowerCase().includes('kostenlos')) tags.add('not_free');
             const title = doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel';
             return { tags: Array.from(tags), title };
         }
@@ -268,15 +284,12 @@
         async function handleAddGame() {
             const urlOrName = steamUrlInput.value.trim();
             if (!urlOrName) {
-                 addGameError.textContent = 'Bitte eine URL oder einen Spielnamen eingeben.';
-                 return;
+                 addGameError.textContent = 'Bitte eine URL oder einen Spielnamen eingeben.'; return;
             }
-
             addGameBtn.disabled = true;
             addGameText.classList.add('hidden');
             addGameLoader.classList.remove('hidden');
             addGameError.textContent = '';
-
             try {
                 let gameUrl;
                 if (urlOrName.startsWith('https://store.steampowered.com/app/')) {
@@ -284,21 +297,13 @@
                 } else {
                     gameUrl = await searchSteamForGame(urlOrName);
                 }
-                
-                if (gamesData.some(game => game.url === gameUrl)) {
-                    throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
-                }
+                if (gamesData.some(game => game.url === gameUrl)) throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
 
                 const { tags, title } = await fetchAndParseSteamPage(gameUrl);
                 await addDoc(gamesCollection, { 
-                    url: gameUrl, 
-                    title, 
-                    tags, 
-                    status: 'upcoming',
-                    createdAt: serverTimestamp() 
+                    url: gameUrl, title, tags, status: 'upcoming', createdAt: serverTimestamp(), memoryImages: [] 
                 });
                 steamUrlInput.value = '';
-
             } catch (error) {
                 console.error("Error adding game:", error);
                 addGameError.textContent = error.message;
@@ -330,14 +335,14 @@
 
         function createGameElement(game) {
             const gameEl = document.createElement('div');
-            gameEl.className = 'game-card bg-gray-900/50 p-4 rounded-lg cursor-grab';
+            gameEl.className = 'game-card bg-gray-900/50 p-4 rounded-lg';
             gameEl.draggable = true;
             gameEl.dataset.id = game.id;
             
             const title = game.title || game.url.split('/')[5]?.replace(/_/g, ' ') || 'Unbekanntes Spiel';
 
             gameEl.innerHTML = `
-                <div>
+                <div class="cursor-grab flex-grow">
                     <p class="font-bold truncate">${title}</p>
                     <div class="flex items-center space-x-4 mt-2">
                         <label class="flex items-center space-x-2 cursor-pointer">
@@ -354,7 +359,10 @@
                         </label>
                     </div>
                 </div>
-                <button class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-3 py-1 text-2xl">&times;</button>
+                <div class="flex flex-col space-y-2">
+                     <button class="manage-images-btn text-blue-400 hover:text-blue-300 text-sm">Bilder</button>
+                     <button class="remove-game-btn text-red-500 hover:text-red-400 font-bold text-sm">&times; Löschen</button>
+                </div>
             `;
             const contentWrapper = document.createElement('div');
             contentWrapper.className = 'flex items-center justify-between';
@@ -366,6 +374,7 @@
                 checkbox.addEventListener('change', (e) => handleTagChange(game.id, e.target.dataset.tag, e.target.checked));
             });
             gameEl.querySelector('.remove-game-btn').addEventListener('click', () => showDeleteConfirmation(game.id, title));
+            gameEl.querySelector('.manage-images-btn').addEventListener('click', () => openImageManager(game.id, title));
 
             gameEl.addEventListener('dragstart', e => {
                 e.dataTransfer.setData('text/plain', game.id);
@@ -384,21 +393,16 @@
             const searchTerm = searchInput.value.toLowerCase();
             const filteredGames = gamesData.filter(game => (game.title || '').toLowerCase().includes(searchTerm));
 
-            let upcomingEmpty = true;
-            let releasedEmpty = true;
-            let playedEmpty = true;
+            let upcomingEmpty = true, releasedEmpty = true, playedEmpty = true;
 
             filteredGames.forEach(game => {
                 const gameEl = createGameElement(game);
                 if (game.status === 'played') {
-                    playedGamesList.appendChild(gameEl);
-                    playedEmpty = false;
+                    playedGamesList.appendChild(gameEl); playedEmpty = false;
                 } else if (game.status === 'released') {
-                    releasedGamesList.appendChild(gameEl);
-                    releasedEmpty = false;
+                    releasedGamesList.appendChild(gameEl); releasedEmpty = false;
                 } else {
-                    upcomingGamesList.appendChild(gameEl);
-                    upcomingEmpty = false;
+                    upcomingGamesList.appendChild(gameEl); upcomingEmpty = false;
                 }
             });
 
@@ -408,20 +412,86 @@
         }
 
         function loadGames() {
-            const q = query(gamesCollection);
+            const q = query(collection(db, "upcoming-games"));
             onSnapshot(q, (snapshot) => {
                 gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                gamesData.sort((a, b) => {
-                    const timeA = a.createdAt?.toMillis() || 0;
-                    const timeB = b.createdAt?.toMillis() || 0;
-                    return timeB - timeA; 
-                });
-
+                gamesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
                 renderGames();
             });
         }
+        
+        // Image Management
+        function openImageManager(gameId, gameTitle) {
+            activeGameIdForImages = gameId;
+            imageModalTitle.textContent = `Bilder für "${gameTitle}"`;
+            imageUploadInput.value = '';
+            displayImagesInModal();
+            imageModal.classList.remove('hidden');
+        }
+        
+        function displayImagesInModal() {
+            imageGallery.innerHTML = '<div class="loader"></div>';
+            const game = gamesData.find(g => g.id === activeGameIdForImages);
+            const images = game?.memoryImages || [];
+            imageGallery.innerHTML = '';
+            if (images.length === 0) {
+                imageGallery.innerHTML = '<p class="text-gray-500 col-span-full text-center">Noch keine Bilder hochgeladen.</p>';
+                return;
+            }
+            images.forEach(imgData => {
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'relative';
+                imgContainer.innerHTML = `
+                    <img src="${imgData.url}" class="w-full h-32 object-cover rounded">
+                    <button data-path="${imgData.path}" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">&times;</button>
+                `;
+                imageGallery.appendChild(imgContainer);
+                imgContainer.querySelector('button').addEventListener('click', () => handleImageDelete(imgData));
+            });
+        }
+        
+        async function handleImageUpload() {
+            const file = imageUploadInput.files[0];
+            if (!file || !activeGameIdForImages) return;
 
+            uploadImageBtn.disabled = true;
+            const filePath = `games/${activeGameIdForImages}/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, filePath);
+
+            try {
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
+                const docRef = doc(db, "upcoming-games", activeGameIdForImages);
+                await updateDoc(docRef, {
+                    memoryImages: arrayUnion({ url: downloadURL, path: filePath })
+                });
+                displayImagesInModal(); // Refresh
+            } catch (error) {
+                console.error("Image upload failed:", error);
+                alert("Fehler beim Hochladen des Bildes.");
+            } finally {
+                imageUploadInput.value = '';
+                uploadImageBtn.disabled = false;
+            }
+        }
+        
+        async function handleImageDelete(imgData) {
+             if (!confirm("Dieses Bild wirklich löschen?")) return;
+             const storageRef = ref(storage, imgData.path);
+             const docRef = doc(db, "upcoming-games", activeGameIdForImages);
+             try {
+                await deleteObject(storageRef);
+                await updateDoc(docRef, {
+                    memoryImages: arrayRemove(imgData)
+                });
+                displayImagesInModal();
+             } catch(error) {
+                console.error("Image delete failed:", error);
+                alert("Fehler beim Löschen des Bildes.");
+             }
+        }
+
+        // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem(SESSION_KEY) === 'true') showDashboard();
 
@@ -432,23 +502,19 @@
             steamUrlInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleAddGame(); });
             searchInput.addEventListener('input', renderGames);
 
-            cancelDeleteBtn.addEventListener('click', () => {
-                deleteModal.classList.add('hidden');
-                gameToDeleteId = null;
-            });
+            cancelDeleteBtn.addEventListener('click', () => deleteModal.classList.add('hidden'));
             confirmDeleteBtn.addEventListener('click', async () => {
                 if(gameToDeleteId) {
                     await deleteDoc(doc(db, "upcoming-games", gameToDeleteId));
                     deleteModal.classList.add('hidden');
-                    gameToDeleteId = null;
                 }
             });
+            
+            closeImageModalBtn.addEventListener('click', () => imageModal.classList.add('hidden'));
+            uploadImageBtn.addEventListener('click', handleImageUpload);
 
             [upcomingGamesContainer, releasedGamesContainer, playedGamesContainer].forEach(container => {
-                container.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    container.classList.add('bg-green-500/10');
-                });
+                container.addEventListener('dragover', e => { e.preventDefault(); container.classList.add('bg-green-500/10'); });
                 container.addEventListener('dragleave', () => container.classList.remove('bg-green-500/10'));
                 container.addEventListener('drop', async e => {
                     e.preventDefault();
@@ -457,9 +523,7 @@
                     let newStatus = 'upcoming';
                     if (container.id === 'released-games-container') newStatus = 'released';
                     if (container.id === 'played-games-container') newStatus = 'played';
-                    
-                    const docRef = doc(db, "upcoming-games", gameId);
-                    await updateDoc(docRef, { status: newStatus });
+                    await updateDoc(doc(db, "upcoming-games", gameId), { status: newStatus });
                 });
             });
         });
