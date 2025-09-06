@@ -13,12 +13,8 @@
             --glow-green: 0 0 5px rgba(74, 222, 128, 0.8), 0 0 10px rgba(74, 222, 128, 0.6), 0 0 20px rgba(74, 222, 128, 0.4), 0 0 40px rgba(74, 222, 128, 0.2);
         }
         body {
-            background-color: #0a0a1a;
-            color: #e0e0e0;
-            font-family: 'Inter', sans-serif;
-            background-image:
-                radial-gradient(circle at 1% 1%, #1a1a3a 1px, transparent 2px),
-                radial-gradient(circle at 99% 99%, #1a1a3a 1px, transparent 2px);
+            background-color: #0a0a1a; color: #e0e0e0; font-family: 'Inter', sans-serif;
+            background-image: radial-gradient(circle at 1% 1%, #1a1a3a 1px, transparent 2px), radial-gradient(circle at 99% 99%, #1a1a3a 1px, transparent 2px);
             background-size: 30px 30px;
         }
         .font-orbitron { font-family: 'Orbitron', sans-serif; }
@@ -35,40 +31,31 @@
         .btn-cyber:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-cyber:hover::before { left: 100%; }
         .form-input {
-            background: rgba(10, 10, 26, 0.8);
-            border: 1px solid rgba(74, 222, 128, 0.4);
-            color: #e0e0e0;
+            background: rgba(10, 10, 26, 0.8); border: 1px solid rgba(74, 222, 128, 0.4); color: #e0e0e0;
         }
-        .form-input:focus {
-            outline: none;
-            border-color: #4ade80;
-            box-shadow: var(--glow-green);
-        }
+        .form-input:focus { outline: none; border-color: #4ade80; box-shadow: var(--glow-green); }
         .loader {
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            border-left-color: #4ade80;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
+            border: 4px solid rgba(255, 255, 255, 0.2); border-left-color: #4ade80; border-radius: 50%;
+            width: 24px; height: 24px; animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
         .custom-checkbox {
-            appearance: none; background-color: #1a1a3a; border: 1px solid #4a5568;
-            border-radius: 4px; width: 1.25rem; height: 1.25rem;
-            display: inline-block; position: relative; cursor: pointer; transition: background-color 0.2s ease;
+            appearance: none; background-color: #1a1a3a; border: 1px solid #4a5568; border-radius: 4px;
+            width: 1.25rem; height: 1.25rem; display: inline-block; position: relative; cursor: pointer; transition: background-color 0.2s ease;
         }
         .custom-checkbox:checked { background-color: #4ade80; border-color: #4ade80; }
         .custom-checkbox:checked::after {
             content: '✓'; font-size: 1rem; color: #0a0a1a;
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
         }
+        .game-card { cursor: grab; transition: transform 0.2s ease; }
+        .game-card:active { cursor: grabbing; transform: scale(1.02); }
+        .drop-zone { min-height: 100px; border: 2px dashed rgba(74, 222, 128, 0.2); transition: background-color 0.2s ease; }
+        .drag-over { background-color: rgba(74, 222, 128, 0.1); }
     </style>
 </head>
 <body class="antialiased flex items-center justify-center min-h-screen">
 
-    <!-- Login Section -->
     <div id="login-section" class="w-full max-w-md">
         <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg text-center">
             <h1 class="text-3xl font-orbitron font-bold mb-6 text-glow-green">Admin Login</h1>
@@ -78,8 +65,7 @@
         </div>
     </div>
 
-    <!-- Dashboard Section (hidden by default) -->
-    <div id="dashboard-section" class="hidden w-full max-w-4xl container mx-auto p-6">
+    <div id="dashboard-section" class="hidden w-full max-w-6xl container mx-auto p-6">
         <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-3xl font-orbitron font-bold text-glow-green">Dashboard</h1>
@@ -98,14 +84,19 @@
                  <p id="add-game-error" class="text-red-500 mt-2 h-4 text-sm"></p>
             </div>
 
-            <div>
-                <h2 class="text-xl font-orbitron mb-4">Spiele verwalten</h2>
-                <div id="games-list" class="space-y-4"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h2 class="text-xl font-orbitron mb-4">Ausstehende Spiele</h2>
+                    <div id="upcoming-games-list" data-status="upcoming" class="drop-zone space-y-4 p-4 rounded-lg"></div>
+                </div>
+                <div>
+                    <h2 class="text-xl font-orbitron mb-4">Veröffentlichte Spiele</h2>
+                    <div id="released-games-list" data-status="released" class="drop-zone space-y-4 p-4 rounded-lg"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div id="delete-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
         <div class="bg-gray-900/80 border border-red-500/50 p-8 rounded-lg text-center shadow-lg max-w-sm w-full mx-4">
             <p id="delete-modal-text" class="mb-6 text-lg">Dieses Spiel wirklich löschen?</p>
@@ -146,7 +137,9 @@
         const addGameText = document.getElementById('add-game-text');
         const addGameLoader = document.getElementById('add-game-loader');
         const addGameError = document.getElementById('add-game-error');
-        const gamesList = document.getElementById('games-list');
+        
+        const upcomingGamesList = document.getElementById('upcoming-games-list');
+        const releasedGamesList = document.getElementById('released-games-list');
 
         const deleteModal = document.getElementById('delete-modal');
         const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
@@ -154,7 +147,6 @@
         const deleteModalText = document.getElementById('delete-modal-text');
         
         let gameToDeleteId = null;
-
         const SESSION_KEY = 'mowl-admin-auth';
 
         async function sha256(message) {
@@ -198,17 +190,8 @@
             const tags = new Set();
             doc.querySelectorAll('.app_tag').forEach(tagEl => {
                 const tag = tagEl.textContent.trim().toLowerCase();
-
-                // Singleplayer: Exact match required
-                if (tag === 'single-player' || tag === 'einzelspieler') {
-                    tags.add('singleplayer');
-                }
-
-                // Coop/Multiplayer: Use specific keywords to avoid false positives
-                // The broad `includes('multiplayer')` was the culprit for false positives
-                if (tag.includes('co-op') || tag.includes('ko-op') || tag.includes('pvp') || tag.includes('mmo') || tag === 'multiplayer' || tag === 'mehrspieler') {
-                    tags.add('coop');
-                }
+                if (tag === 'single-player' || tag === 'einzelspieler') tags.add('singleplayer');
+                if (tag.includes('co-op') || tag.includes('ko-op') || tag.includes('pvp') || tag.includes('mmo') || tag === 'multiplayer' || tag === 'mehrspieler') tags.add('coop');
             });
             
             const price = doc.querySelector('.game_purchase_price, .discount_final_price');
@@ -237,7 +220,7 @@
             addGameError.textContent = '';
             try {
                 const { tags, title } = await fetchAndParseSteamPage(url);
-                await addDoc(gamesCollection, { url, title, tags });
+                await addDoc(gamesCollection, { url, title, tags, status: 'upcoming' }); // Default status
                 steamUrlInput.value = '';
             } catch (error) {
                 console.error("Error adding game:", error);
@@ -267,75 +250,109 @@
             }
             await updateDoc(docRef, { tags: Array.from(currentTags) });
         }
+
+        async function updateGameStatus(gameId, newStatus) {
+            const docRef = doc(db, "upcoming-games", gameId);
+            await updateDoc(docRef, { status: newStatus });
+        }
         
         let gamesData = [];
 
+        function createGameCard(game) {
+            const gameEl = document.createElement('div');
+            gameEl.className = 'game-card bg-gray-900/50 p-4 rounded-lg flex items-center justify-between';
+            gameEl.setAttribute('draggable', 'true');
+            gameEl.dataset.id = game.id;
+            const title = game.title || game.url.split('/')[5]?.replace(/_/g, ' ') || 'Unbekanntes Spiel';
+
+            gameEl.innerHTML = `
+                <div>
+                    <p class="font-bold truncate">${title}</p>
+                    <div class="flex items-center space-x-4 mt-2">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" data-tag="coop" class="custom-checkbox" ${game.tags?.includes('coop') ? 'checked' : ''}>
+                            <span class="text-sm text-gray-400">Coop</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" data-tag="singleplayer" class="custom-checkbox" ${game.tags?.includes('singleplayer') ? 'checked' : ''}>
+                            <span class="text-sm text-gray-400">Singleplayer</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" data-tag="not_free" class="custom-checkbox" ${game.tags?.includes('not_free') ? 'checked' : ''}>
+                            <span class="text-sm text-gray-400">Not Free</span>
+                        </label>
+                    </div>
+                </div>
+                <button class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-3 py-1">&times; Löschen</button>
+            `;
+            
+            gameEl.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', game.id);
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            gameEl.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => handleTagChange(game.id, e.target.dataset.tag, e.target.checked));
+            });
+            gameEl.querySelector('.remove-game-btn').addEventListener('click', () => showDeleteConfirmation(game.id, title));
+
+            return gameEl;
+        }
+
         function loadGames() {
             onSnapshot(gamesCollection, (snapshot) => {
-                gamesList.innerHTML = '';
+                upcomingGamesList.innerHTML = '';
+                releasedGamesList.innerHTML = '';
                 gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                if (gamesData.length === 0) {
-                     gamesList.innerHTML = '<p class="text-gray-600">Noch keine Spiele hinzugefügt.</p>';
-                     return;
-                }
-
-                gamesData.sort((a,b) => (a.title || '').localeCompare(b.title || ''));
-
-                gamesData.forEach(game => {
-                    const gameEl = document.createElement('div');
-                    gameEl.className = 'bg-gray-900/50 p-4 rounded-lg flex items-center justify-between';
-                    const title = game.title || game.url.split('/')[5]?.replace(/_/g, ' ') || 'Unbekanntes Spiel';
-
-                    gameEl.innerHTML = `
-                        <div>
-                            <p class="font-bold truncate">${title}</p>
-                            <div class="flex items-center space-x-4 mt-2">
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" data-tag="coop" class="custom-checkbox" ${game.tags?.includes('coop') ? 'checked' : ''}>
-                                    <span class="text-sm text-gray-400">Coop</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" data-tag="singleplayer" class="custom-checkbox" ${game.tags?.includes('singleplayer') ? 'checked' : ''}>
-                                    <span class="text-sm text-gray-400">Singleplayer</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" data-tag="not_free" class="custom-checkbox" ${game.tags?.includes('not_free') ? 'checked' : ''}>
-                                    <span class="text-sm text-gray-400">Not Free</span>
-                                </label>
-                            </div>
-                        </div>
-                        <button class="remove-game-btn text-red-500 hover:text-red-400 font-bold px-3 py-1">&times; Löschen</button>
-                    `;
-                    gamesList.appendChild(gameEl);
-
-                    gameEl.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                        checkbox.addEventListener('change', (e) => handleTagChange(game.id, e.target.dataset.tag, e.target.checked));
-                    });
-                    gameEl.querySelector('.remove-game-btn').addEventListener('click', () => showDeleteConfirmation(game.id, title));
+                const sortedGames = gamesData.sort((a,b) => (a.title || '').localeCompare(b.title || ''));
+                
+                sortedGames.forEach(game => {
+                    const card = createGameCard(game);
+                    if (game.status === 'released') {
+                        releasedGamesList.appendChild(card);
+                    } else { // 'upcoming' or undefined
+                        upcomingGamesList.appendChild(card);
+                    }
                 });
+
+                if (upcomingGamesList.innerHTML === '') upcomingGamesList.innerHTML = '<p class="text-gray-600 text-center p-4">Keine ausstehenden Spiele.</p>';
+                if (releasedGamesList.innerHTML === '') releasedGamesList.innerHTML = '<p class="text-gray-600 text-center p-4">Noch keine Spiele veröffentlicht.</p>';
             });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            if (sessionStorage.getItem(SESSION_KEY) === 'true') {
-                showDashboard();
-            }
+            if (sessionStorage.getItem(SESSION_KEY) === 'true') showDashboard();
             loginBtn.addEventListener('click', handleLogin);
             passwordInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleLogin(); });
             logoutBtn.addEventListener('click', handleLogout);
             addGameBtn.addEventListener('click', handleAddGame);
 
             cancelDeleteBtn.addEventListener('click', () => {
-                deleteModal.classList.add('hidden');
-                gameToDeleteId = null;
+                deleteModal.classList.add('hidden'); gameToDeleteId = null;
             });
             confirmDeleteBtn.addEventListener('click', async () => {
                 if(gameToDeleteId) {
                     await deleteDoc(doc(db, "upcoming-games", gameToDeleteId));
-                    deleteModal.classList.add('hidden');
-                    gameToDeleteId = null;
+                    deleteModal.classList.add('hidden'); gameToDeleteId = null;
                 }
+            });
+
+            // Drag and Drop Listeners
+            [upcomingGamesList, releasedGamesList].forEach(zone => {
+                zone.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('drag-over');
+                });
+                zone.addEventListener('drop', e => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    const gameId = e.dataTransfer.getData('text/plain');
+                    const newStatus = zone.dataset.status;
+                    updateGameStatus(gameId, newStatus);
+                });
             });
         });
     </script>
