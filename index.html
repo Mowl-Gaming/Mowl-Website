@@ -160,6 +160,7 @@
                 <a href="#about" class="text-lg hover:text-green-400 transition-colors duration-300">Über Uns</a>
                 <a href="#upcoming-games" class="text-lg hover:text-green-400 transition-colors duration-300">Ausstehende Spiele</a>
                 <a href="#games" class="text-lg hover:text-green-400 transition-colors duration-300">Spiele</a>
+                <a href="#played-games" class="text-lg hover:text-green-400 transition-colors duration-300">Bereits gespielt</a>
                 <a href="#team" class="text-lg hover:text-green-400 transition-colors duration-300">Team</a>
                 <a href="#contact" class="text-lg hover:text-green-400 transition-colors duration-300">Kontakt</a>
             </nav>
@@ -174,6 +175,7 @@
              <a href="#about" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Über Uns</a>
              <a href="#upcoming-games" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Ausstehende Spiele</a>
              <a href="#games" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Spiele</a>
+             <a href="#played-games" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Bereits gespielt</a>
              <a href="#team" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Team</a>
              <a href="#contact" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Kontakt</a>
         </div>
@@ -263,6 +265,18 @@
                 
                 <div id="released-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
                 <p id="no-released-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Spiele veröffentlicht.</p>
+            </div>
+        </section>
+
+        <!-- Played Games Section -->
+        <section id="played-games" class="py-20 bg-black/20 scroll-target">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Bereits <span class="text-green-400">Gespielt</span></h2>
+                </div>
+                
+                <div id="played-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                <p id="no-played-games" class="text-gray-500 mt-8 text-center hidden">Noch keine Spiele als gespielt markiert.</p>
             </div>
         </section>
         
@@ -399,6 +413,8 @@
             
             const releasedGamesGrid = document.getElementById('released-games-grid');
             const noReleasedGamesMsg = document.getElementById('no-released-games');
+            const playedGamesGrid = document.getElementById('played-games-grid');
+            const noPlayedGamesMsg = document.getElementById('no-played-games');
 
             const fetchedDataCache = new Map();
             async function fetchSteamGameData(steamUrl) {
@@ -447,13 +463,17 @@
             async function displayGames(docs) {
                 const upcomingDocs = { coop: [], singleplayer: [], not_free: [] };
                 let releasedDocs = [];
+                let playedDocs = [];
                 
                 docs.forEach(doc => {
                     const data = doc.data();
                     const tags = data.tags || [];
-                    if (data.status === 'released') {
+
+                    if (data.status === 'played') {
+                        playedDocs.push(data);
+                    } else if (data.status === 'released') {
                         releasedDocs.push(data);
-                    } else {
+                    } else { // upcoming
                         if (tags.includes('coop')) upcomingDocs.coop.push(data);
                         if (tags.includes('singleplayer')) upcomingDocs.singleplayer.push(data);
                         if (tags.includes('not_free')) upcomingDocs.not_free.push(data);
@@ -462,6 +482,7 @@
                 
                 await renderCategorizedGames(upcomingGrids, upcomingNoGamesMsgs, upcomingLoadMoreButtons, upcomingDocs);
                 await renderSimpleGameList(releasedGamesGrid, noReleasedGamesMsg, releasedDocs);
+                await renderSimpleGameList(playedGamesGrid, noPlayedGamesMsg, playedDocs);
             }
 
             async function renderCategorizedGames(grids, noGamesMsgs, loadMoreButtons, categorizedDocs) {
