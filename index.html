@@ -253,31 +253,22 @@
                     <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Ausstehende <span class="text-green-400">Spiele</span></h2>
                 </div>
                 
-                <!-- Coop Category -->
                 <div class="mb-16">
                     <h3 class="text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Coop</h3>
-                    <div id="coop-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <!-- Coop games will be populated here -->
-                    </div>
-                    <p id="no-coop-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Coop-Spiele angekündigt.</p>
+                    <div id="upcoming-coop-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                    <p id="no-upcoming-coop-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Coop-Spiele angekündigt.</p>
                 </div>
 
-                <!-- Singleplayer Category -->
                 <div class="mb-16">
                     <h3 class="text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Singleplayer</h3>
-                    <div id="singleplayer-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <!-- Singleplayer games will be populated here -->
-                    </div>
-                     <p id="no-singleplayer-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Singleplayer-Spiele angekündigt.</p>
+                    <div id="upcoming-singleplayer-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                     <p id="no-upcoming-singleplayer-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Singleplayer-Spiele angekündigt.</p>
                 </div>
 
-                <!-- Not Free Category -->
                 <div>
                     <h3 class="text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Not Free</h3>
-                    <div id="not-free-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <!-- Not Free games will be populated here -->
-                    </div>
-                    <p id="no-not-free-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine kostenpflichtigen Spiele angekündigt.</p>
+                    <div id="upcoming-not-free-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                    <p id="no-upcoming-not-free-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine kostenpflichtigen Spiele angekündigt.</p>
                 </div>
             </div>
         </section>
@@ -286,31 +277,11 @@
         <section id="games" class="py-20 scroll-target">
             <div class="container mx-auto px-6">
                 <div class="text-center mb-16">
-                    <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Unsere <span class="text-green-400">Projekte</span></h2>
+                    <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Aktuelle <span class="text-green-400">Spiele</span></h2>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <!-- Game Card 1 -->
-                    <div class="card p-6 rounded-lg text-center">
-                        <img src="https://placehold.co/600x400/0a0a1a/4ade80?text=CYBERPULSE" alt="Cyberpulse Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
-                        <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">Cyberpulse</h3>
-                        <p class="text-gray-400 mb-4">Ein rasanter Action-Roguelike in den neon-getränkten Straßen von Neo-Kyoto.</p>
-                        <a href="#" class="font-semibold text-green-400 hover:text-white transition-colors">Mehr erfahren &rarr;</a>
-                    </div>
-                    <!-- Game Card 2 -->
-                    <div class="card p-6 rounded-lg text-center">
-                        <img src="https://placehold.co/600x400/0a0a1a/ff00ff?text=VOID+ECHO" alt="Void Echo Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-magenta-500/50">
-                        <h3 class="text-2xl font-orbitron font-bold mb-2 text-magenta-300">Void Echo</h3>
-                        <p class="text-gray-400 mb-4">Erforsche die geheimnisvollen Ruinen einer alten Zivilisation in diesem Sci-Fi-Adventure.</p>
-                        <a href="#" class="font-semibold text-magenta-400 hover:text-white transition-colors">Mehr erfahren &rarr;</a>
-                    </div>
-                    <!-- Game Card 3 -->
-                    <div class="card p-6 rounded-lg text-center">
-                         <img src="https://placehold.co/600x400/0a0a1a/ffffff?text=PROJECT+CHIMERA" alt="Project Chimera Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-gray-400/50">
-                        <h3 class="text-2xl font-orbitron font-bold mb-2 text-gray-300">Project Chimera</h3>
-                        <p class="text-gray-400 mb-4">Ein streng geheimes Multiplayer-Erlebnis, das Taktik und Strategie neu definieren wird.</p>
-                         <a href="#" class="font-semibold text-gray-400 hover:text-white transition-colors">Demnächst &rarr;</a>
-                    </div>
-                </div>
+                
+                <div id="released-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                <p id="no-released-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Spiele veröffentlicht.</p>
             </div>
         </section>
         
@@ -321,7 +292,6 @@
                     <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Das <span class="text-green-400">Kernteam</span></h2>
                 </div>
                 <div class="flex flex-wrap justify-center gap-8">
-                    <!-- Team Member 4 (Mike) -->
                     <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 text-center">
                         <div class="card p-4 rounded-lg">
                            <img src="https://i.imgur.com/fTC32Td.png" alt="Teammitglied Mike" class="w-32 h-32 rounded-full mx-auto mb-4 border-2 border-green-400 object-cover bg-black">
@@ -329,7 +299,6 @@
                             <p class="text-gray-400">Community Manager</p>
                         </div>
                     </div>
-                    <!-- Team Member 5 (Powl) -->
                     <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 text-center">
                         <div class="card p-4 rounded-lg">
                            <img src="https://i.imgur.com/uHeQIla.png" alt="Teammitglied Powl" class="w-32 h-32 rounded-full mx-auto mb-4 border-2 border-yellow-400 object-cover">
@@ -357,21 +326,15 @@
             </div>
             
             <p class="mt-10 text-sm text-gray-500">&copy; 2025 Mowl. Alle Rechte vorbehalten.
-                <a href="admin.html" target="_blank" class="cursor-pointer ml-4" title="Admin Login">&#128272;</a>
+                <a href="admin.html" class="cursor-pointer ml-4" title="Admin Login">&#128272;</a>
             </p>
         </div>
     </footer>
     
-    <!-- Modals have been moved to admin.html -->
-
-    <!-- Firebase SDKs -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
       
-        // --- WICHTIG: Deine Firebase Konfiguration hier einfügen! ---
-        // Ersetze das folgende Objekt mit dem, das du aus der Firebase Console kopiert hast.
         const firebaseConfig = {
             apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
             authDomain: "mowl-website.firebaseapp.com",
@@ -382,26 +345,22 @@
             measurementId: "G-9F6YC5NLCS"
         };
       
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const gamesCollection = collection(db, "upcoming-games");
 
         document.addEventListener('DOMContentLoaded', () => {
 
-            // --- Mobile Menu ---
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
             mobileMenuButton.addEventListener('click', () => {
                 mobileMenu.classList.toggle('hidden');
             });
 
-            // --- Animated Hero Background ---
             const heroBg = document.getElementById('hero-bg');
             if (heroBg) {
                 let lines = [];
                 const lineCount = 50;
-
                 function createLine() {
                     const line = document.createElement('div');
                     line.style.position = 'absolute';
@@ -414,21 +373,12 @@
                     heroBg.appendChild(line);
                     return line;
                 }
-                
-                for (let i = 0; i < lineCount; i++) {
-                    lines.push(createLine());
-                }
-
+                for (let i = 0; i < lineCount; i++) lines.push(createLine());
                 const style = document.createElement('style');
-                style.innerHTML = `
-                @keyframes moveLine {
-                    from { transform: translateX(-200px); }
-                    to { transform: translateX(${window.innerWidth}px); }
-                }`;
+                style.innerHTML = `@keyframes moveLine { from { transform: translateX(-200px); } to { transform: translateX(${window.innerWidth}px); } }`;
                 document.head.appendChild(style);
             }
 
-            // --- Scroll Animations ---
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -437,30 +387,30 @@
                     }
                 });
             }, { threshold: 0.1 });
+            document.querySelectorAll('.scroll-target').forEach(el => observer.observe(el));
 
-            document.querySelectorAll('.scroll-target').forEach(el => {
-                observer.observe(el);
-            });
+            const upcomingGrids = {
+                coop: document.getElementById('upcoming-coop-games-grid'),
+                singleplayer: document.getElementById('upcoming-singleplayer-games-grid'),
+                not_free: document.getElementById('upcoming-not-free-games-grid')
+            };
+            const upcomingNoGamesMsgs = {
+                coop: document.getElementById('no-upcoming-coop-games'),
+                singleplayer: document.getElementById('no-upcoming-singleplayer-games'),
+                not_free: document.getElementById('no-upcoming-not-free-games')
+            };
+            
+            const releasedGamesGrid = document.getElementById('released-games-grid');
+            const noReleasedGamesMsg = document.getElementById('no-released-games');
 
-            // --- Upcoming Games Display ---
-            const grids = {
-                coop: document.getElementById('coop-games-grid'),
-                singleplayer: document.getElementById('singleplayer-games-grid'),
-                not_free: document.getElementById('not-free-games-grid')
-            };
-            const noGamesMsgs = {
-                coop: document.getElementById('no-coop-games'),
-                singleplayer: document.getElementById('no-singleplayer-games'),
-                not_free: document.getElementById('no-not-free-games')
-            };
 
             const fetchedDataCache = new Map();
-            
             async function fetchSteamGameData(steamUrl) {
                 if (fetchedDataCache.has(steamUrl)) {
                     return fetchedDataCache.get(steamUrl);
                 }
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(steamUrl)}`;
+                // Using a different, more reliable proxy service to prevent fetch errors.
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(steamUrl)}`;
                 try {
                     const response = await fetch(proxyUrl);
                     if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
@@ -475,8 +425,10 @@
                     fetchedDataCache.set(steamUrl, data);
                     return data;
                 } catch (error) {
-                    console.error("Failed to fetch Steam game data:", error);
-                    throw error;
+                    console.error(`Failed to fetch Steam game data for ${steamUrl}:`, error);
+                    // Return null instead of throwing an error. This allows other games to load
+                    // even if one fails, preventing the entire page from breaking.
+                    return null;
                 }
             }
 
@@ -495,30 +447,36 @@
                 `;
             }
 
-            // --- REALTIME LISTENER FROM FIREBASE ---
             onSnapshot(gamesCollection, (snapshot) => {
-                const gameDocs = snapshot.docs;
-                displayCategorizedGames(gameDocs);
+                displayGames(snapshot.docs);
             });
             
-            async function displayCategorizedGames(docs) {
-                // Reset grids and hide messages
-                Object.values(grids).forEach(grid => grid.innerHTML = '');
-                Object.values(noGamesMsgs).forEach(msg => msg.classList.add('hidden'));
+            async function displayGames(docs) {
+                // Reset upcoming grids and messages
+                Object.values(upcomingGrids).forEach(grid => grid.innerHTML = '');
+                Object.values(upcomingNoGamesMsgs).forEach(msg => msg.classList.add('hidden'));
 
-                const categorizedDocs = { coop: [], singleplayer: [], not_free: [] };
+                const upcomingDocs = { coop: [], singleplayer: [], not_free: [] };
+                const releasedDocs = [];
                 
-                // Categorize documents based on tags
                 docs.forEach(doc => {
                     const data = doc.data();
                     const tags = data.tags || [];
-                    if (tags.includes('coop')) categorizedDocs.coop.push(data);
-                    if (tags.includes('singleplayer')) categorizedDocs.singleplayer.push(data);
-                    if (tags.includes('not_free')) categorizedDocs.not_free.push(data);
+                    if (data.status === 'released') {
+                        releasedDocs.push(data);
+                    } else {
+                        if (tags.includes('coop')) upcomingDocs.coop.push(data);
+                        if (tags.includes('singleplayer')) upcomingDocs.singleplayer.push(data);
+                        if (tags.includes('not_free')) upcomingDocs.not_free.push(data);
+                    }
                 });
                 
-                // Process each category
-                for (const category in categorizedDocs) {
+                await renderCategorizedGames(upcomingGrids, upcomingNoGamesMsgs, upcomingDocs);
+                await renderSimpleGameList(releasedGamesGrid, noReleasedGamesMsg, releasedDocs);
+            }
+
+            async function renderCategorizedGames(grids, noGamesMsgs, categorizedDocs) {
+                 for (const category in categorizedDocs) {
                     const grid = grids[category];
                     const noGamesMsg = noGamesMsgs[category];
                     const docsForCategory = categorizedDocs[category];
@@ -531,7 +489,7 @@
                     const fetchPromises = docsForCategory.map(doc => fetchSteamGameData(doc.url).catch(e => null));
                     const gameDataArray = await Promise.all(fetchPromises);
                     
-                    grid.innerHTML = ''; // Clear potential placeholders
+                    grid.innerHTML = '';
                     gameDataArray.forEach(gameData => {
                         if (gameData) {
                             grid.innerHTML += createGameCard(gameData);
@@ -539,7 +497,29 @@
                     });
                 }
             }
+
+            async function renderSimpleGameList(grid, noGamesMsg, docs) {
+                if (docs.length === 0) {
+                    noGamesMsg.classList.remove('hidden');
+                    grid.innerHTML = '';
+                    return;
+                }
+
+                noGamesMsg.classList.add('hidden');
+                
+                const uniqueDocs = Array.from(new Map(docs.map(doc => [doc.url, doc])).values());
+                const fetchPromises = uniqueDocs.map(doc => fetchSteamGameData(doc.url).catch(e => null));
+                const gameDataArray = await Promise.all(fetchPromises);
+                
+                grid.innerHTML = '';
+                gameDataArray.forEach(gameData => {
+                    if (gameData) {
+                        grid.innerHTML += createGameCard(gameData);
+                    }
+                });
+            }
         });
     </script>
 </body>
 </html>
+
