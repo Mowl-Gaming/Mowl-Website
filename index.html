@@ -14,6 +14,10 @@
             --glow-magenta: 0 0 5px rgba(255, 0, 255, 0.8), 0 0 10px rgba(255, 0, 255, 0.6), 0 0 20px rgba(255, 0, 255, 0.4), 0 0 40px rgba(255, 0, 255, 0.2);
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             background-color: #0a0a1a;
             color: #e0e0e0;
@@ -132,54 +136,17 @@
             opacity: 0;
         }
         
-        /* --- Modal Styles --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+        .collapsible-content {
+            max-height: 2000px; /* Adjust if you expect very long lists */
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, margin-bottom 0.5s ease-in-out;
         }
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
+        .collapsible-content.collapsed {
+            max-height: 0;
+            margin-bottom: 0 !important;
         }
-        .modal-content {
-            background: #0a0a1a;
-            border: 1px solid #4ade80;
-            box-shadow: var(--glow-green);
-            padding: 2rem;
-            border-radius: 0.5rem;
-            width: 90%;
-            max-width: 600px;
-            position: relative;
-            transform: scale(0.95);
-            transition: transform 0.3s ease;
-        }
-        .modal-overlay.active .modal-content {
-            transform: scale(1);
-        }
-
-        /* --- Loading Spinner --- */
-        .loader {
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            border-left-color: #4ade80;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .collapsible-header svg.collapsed {
+            transform: rotate(-90deg);
         }
 
     </style>
@@ -189,7 +156,7 @@
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-lg">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 class="text-3xl font-bold font-orbitron text-glow-green cursor-pointer">MOWL</h1>
+            <a href="#" class="text-3xl font-bold font-orbitron text-glow-green cursor-pointer">MOWL</a>
             <nav class="hidden md:flex space-x-8">
                 <a href="#about" class="text-lg hover:text-green-400 transition-colors duration-300">Über Uns</a>
                 <a href="#upcoming-games" class="text-lg hover:text-green-400 transition-colors duration-300">Ausstehende Spiele</a>
@@ -253,22 +220,37 @@
                     <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Ausstehende <span class="text-green-400">Spiele</span></h2>
                 </div>
                 
-                <div class="mb-16">
-                    <h3 class="text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Coop</h3>
-                    <div id="upcoming-coop-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-                    <p id="no-upcoming-coop-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Coop-Spiele angekündigt.</p>
+                <div class="collapsible-category mb-16">
+                    <h3 class="collapsible-header flex justify-between items-center cursor-pointer text-3xl font-orbitron font-semibold text-green-300 border-b-2 border-green-500/30 pb-2">
+                        <span>Coop</span>
+                        <svg class="w-8 h-8 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </h3>
+                    <div class="collapsible-content mt-8">
+                        <div id="upcoming-coop-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                        <p id="no-upcoming-coop-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Coop-Spiele angekündigt.</p>
+                    </div>
                 </div>
 
-                <div class="mb-16">
-                    <h3 class="text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Singleplayer</h3>
-                    <div id="upcoming-singleplayer-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-                     <p id="no-upcoming-singleplayer-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Singleplayer-Spiele angekündigt.</p>
+                <div class="collapsible-category mb-16">
+                    <h3 class="collapsible-header flex justify-between items-center cursor-pointer text-3xl font-orbitron font-semibold text-green-300 border-b-2 border-green-500/30 pb-2">
+                       <span>Singleplayer</span>
+                       <svg class="w-8 h-8 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </h3>
+                    <div class="collapsible-content mt-8">
+                        <div id="upcoming-singleplayer-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                        <p id="no-upcoming-singleplayer-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Singleplayer-Spiele angekündigt.</p>
+                    </div>
                 </div>
 
-                <div>
-                    <h3 class="text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Not Free</h3>
-                    <div id="upcoming-not-free-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-                    <p id="no-upcoming-not-free-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine kostenpflichtigen Spiele angekündigt.</p>
+                <div class="collapsible-category">
+                    <h3 class="collapsible-header flex justify-between items-center cursor-pointer text-3xl font-orbitron font-semibold text-green-300 border-b-2 border-green-500/30 pb-2">
+                        <span>Not Free</span>
+                        <svg class="w-8 h-8 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </h3>
+                    <div class="collapsible-content mt-8">
+                        <div id="upcoming-not-free-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                        <p id="no-upcoming-not-free-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine kostenpflichtigen Spiele angekündigt.</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -356,6 +338,21 @@
             mobileMenuButton.addEventListener('click', () => {
                 mobileMenu.classList.toggle('hidden');
             });
+            
+            document.querySelectorAll('nav a').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                     if (this.getAttribute('href').startsWith('#')) {
+                        e.preventDefault();
+                        document.querySelector(this.getAttribute('href')).scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                        if (!mobileMenu.classList.contains('hidden')) {
+                             mobileMenu.classList.add('hidden');
+                        }
+                     }
+                });
+            });
+
 
             const heroBg = document.getElementById('hero-bg');
             if (heroBg) {
@@ -409,7 +406,6 @@
                 if (fetchedDataCache.has(steamUrl)) {
                     return fetchedDataCache.get(steamUrl);
                 }
-                // Using a different, more reliable proxy service to prevent fetch errors.
                 const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(steamUrl)}`;
                 try {
                     const response = await fetch(proxyUrl);
@@ -426,8 +422,6 @@
                     return data;
                 } catch (error) {
                     console.error(`Failed to fetch Steam game data for ${steamUrl}:`, error);
-                    // Return null instead of throwing an error. This allows other games to load
-                    // even if one fails, preventing the entire page from breaking.
                     return null;
                 }
             }
@@ -452,7 +446,6 @@
             });
             
             async function displayGames(docs) {
-                // Reset upcoming grids and messages
                 Object.values(upcomingGrids).forEach(grid => grid.innerHTML = '');
                 Object.values(upcomingNoGamesMsgs).forEach(msg => msg.classList.add('hidden'));
 
@@ -518,8 +511,18 @@
                     }
                 });
             }
+
+            // Collapsible categories
+            document.querySelectorAll('.collapsible-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('svg');
+
+                    content.classList.toggle('collapsed');
+                    icon.classList.toggle('collapsed');
+                });
+            });
         });
     </script>
 </body>
 </html>
-
