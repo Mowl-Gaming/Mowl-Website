@@ -198,11 +198,16 @@
             const tags = new Set();
             doc.querySelectorAll('.app_tag').forEach(tagEl => {
                 const tag = tagEl.textContent.trim().toLowerCase();
-                if (tag.includes('co-op') || tag.includes('multiplayer') || tag.includes('mehrspieler') || tag.includes('ko-op')) {
-                    tags.add('coop');
-                }
-                if (tag.includes('single-player') || tag.includes('einzelspieler')) {
+
+                // Singleplayer: Exact match required
+                if (tag === 'single-player' || tag === 'einzelspieler') {
                     tags.add('singleplayer');
+                }
+
+                // Coop/Multiplayer: Use specific keywords to avoid false positives
+                // The broad `includes('multiplayer')` was the culprit for false positives
+                if (tag.includes('co-op') || tag.includes('ko-op') || tag.includes('pvp') || tag.includes('mmo') || tag === 'multiplayer' || tag === 'mehrspieler') {
+                    tags.add('coop');
                 }
             });
             
@@ -220,7 +225,6 @@
                 addGameError.textContent = 'Bitte eine gültige Steam App URL eingeben.'; return;
             }
 
-            // Check for duplicates before proceeding
             const isDuplicate = gamesData.some(game => game.url === url);
             if (isDuplicate) {
                 addGameError.textContent = 'Dieses Spiel wurde bereits hinzugefügt.';
@@ -276,7 +280,6 @@
                      return;
                 }
 
-                // *** FIX: Safer sorting to prevent errors ***
                 gamesData.sort((a,b) => (a.title || '').localeCompare(b.title || ''));
 
                 gamesData.forEach(game => {
@@ -338,5 +341,3 @@
     </script>
 </body>
 </html>
-
-
