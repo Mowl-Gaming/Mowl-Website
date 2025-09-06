@@ -37,15 +37,7 @@
         .text-glow-green {
             text-shadow: var(--glow-green);
         }
-
-        .text-glow-magenta {
-            text-shadow: var(--glow-magenta);
-        }
         
-        .border-glow-green {
-            box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
-        }
-
         .btn-cyber {
             position: relative;
             border: 1px solid #4ade80; /* green-400 */
@@ -87,7 +79,7 @@
             border: 1px solid rgba(74, 222, 128, 0.2);
             position: relative;
             overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
         }
         
         .card:hover {
@@ -137,17 +129,23 @@
             opacity: 0;
         }
         
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .arrow {
+            transition: transform 0.3s ease;
+        }
+        .arrow.rotate-90 {
+            transform: rotate(90deg);
+        }
+
         .collapsible-content {
-            max-height: 2000px; /* Adjust if you expect very long lists */
+            transition: max-height 0.5s ease-out;
             overflow: hidden;
-            transition: max-height 0.5s ease-in-out, margin-bottom 0.5s ease-in-out;
-        }
-        .collapsible-content.collapsed {
-            max-height: 0;
-            margin-bottom: 0 !important;
-        }
-        .collapsible-header svg.collapsed {
-            transform: rotate(-90deg);
         }
 
     </style>
@@ -173,11 +171,11 @@
         </div>
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="md:hidden hidden px-6 pb-4 space-y-2">
-             <a href="#about" class="block text-lg hover:text-green-400 transition-colors duration-300">Über Uns</a>
-             <a href="#upcoming-games" class="block text-lg hover:text-green-400 transition-colors duration-300">Ausstehende Spiele</a>
-             <a href="#games" class="block text-lg hover:text-green-400 transition-colors duration-300">Spiele</a>
-             <a href="#team" class="block text-lg hover:text-green-400 transition-colors duration-300">Team</a>
-             <a href="#contact" class="block text-lg hover:text-green-400 transition-colors duration-300">Kontakt</a>
+             <a href="#about" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Über Uns</a>
+             <a href="#upcoming-games" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Ausstehende Spiele</a>
+             <a href="#games" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Spiele</a>
+             <a href="#team" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Team</a>
+             <a href="#contact" class="mobile-nav-link block text-lg hover:text-green-400 transition-colors duration-300">Kontakt</a>
         </div>
     </header>
 
@@ -221,35 +219,35 @@
                     <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Ausstehende <span class="text-green-400">Spiele</span></h2>
                 </div>
                 
-                <div class="collapsible-category mb-16">
-                    <h3 class="collapsible-header flex justify-between items-center cursor-pointer text-3xl font-orbitron font-semibold text-green-300 border-b-2 border-green-500/30 pb-2">
-                        <span>Coop</span>
-                        <svg class="w-8 h-8 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </h3>
-                    <div class="collapsible-content mt-8">
+                <div class="mb-16">
+                    <h3 class="collapsible-header text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Coop <span class="arrow text-2xl">&#9654;</span></h3>
+                    <div class="collapsible-content hidden">
                         <div id="upcoming-coop-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                        <div class="text-center mt-8">
+                            <button id="load-more-upcoming-coop" class="btn-cyber py-2 px-6 hidden">Mehr laden</button>
+                        </div>
                         <p id="no-upcoming-coop-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Coop-Spiele angekündigt.</p>
                     </div>
                 </div>
 
-                <div class="collapsible-category mb-16">
-                    <h3 class="collapsible-header flex justify-between items-center cursor-pointer text-3xl font-orbitron font-semibold text-green-300 border-b-2 border-green-500/30 pb-2">
-                       <span>Singleplayer</span>
-                       <svg class="w-8 h-8 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </h3>
-                    <div class="collapsible-content mt-8">
+                <div class="mb-16">
+                    <h3 class="collapsible-header text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Singleplayer <span class="arrow text-2xl">&#9654;</span></h3>
+                     <div class="collapsible-content hidden">
                         <div id="upcoming-singleplayer-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                        <div class="text-center mt-8">
+                            <button id="load-more-upcoming-singleplayer" class="btn-cyber py-2 px-6 hidden">Mehr laden</button>
+                        </div>
                         <p id="no-upcoming-singleplayer-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Singleplayer-Spiele angekündigt.</p>
                     </div>
                 </div>
 
-                <div class="collapsible-category">
-                    <h3 class="collapsible-header flex justify-between items-center cursor-pointer text-3xl font-orbitron font-semibold text-green-300 border-b-2 border-green-500/30 pb-2">
-                        <span>Not Free</span>
-                        <svg class="w-8 h-8 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </h3>
-                    <div class="collapsible-content mt-8">
+                <div>
+                    <h3 class="collapsible-header text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Not Free <span class="arrow text-2xl">&#9654;</span></h3>
+                     <div class="collapsible-content hidden">
                         <div id="upcoming-not-free-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                        <div class="text-center mt-8">
+                            <button id="load-more-upcoming-not-free" class="btn-cyber py-2 px-6 hidden">Mehr laden</button>
+                        </div>
                         <p id="no-upcoming-not-free-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine kostenpflichtigen Spiele angekündigt.</p>
                     </div>
                 </div>
@@ -277,7 +275,7 @@
                 <div class="flex flex-wrap justify-center gap-8">
                     <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 text-center">
                         <div class="card p-4 rounded-lg">
-                           <img src="https://i.imgur.com/fTC32Td.png" alt="Teammitglied Mike" class="w-32 h-32 rounded-full mx-auto mb-4 border-2 border-green-400 object-cover bg-black">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="w-32 h-32 rounded-full mx-auto mb-4 border-2 border-green-400 object-cover bg-black p-2" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><circle cx="12" cy="12" r="10"/></svg>
                             <h3 class="text-xl font-bold font-orbitron text-green-300">Mike</h3>
                             <p class="text-gray-400">Community Manager</p>
                         </div>
@@ -305,7 +303,6 @@
             <a href="mailto:kontakt@mowl.dev" class="text-lg font-semibold text-green-400 hover:text-glow-green transition-all">mowlgaming.dev@gmail.com</a>
             
             <div class="flex justify-center space-x-6 mt-8">
-                 <!-- Social Links Here -->
             </div>
             
             <p class="mt-10 text-sm text-gray-500">&copy; 2025 Mowl. Alle Rechte vorbehalten.
@@ -339,21 +336,9 @@
             mobileMenuButton.addEventListener('click', () => {
                 mobileMenu.classList.toggle('hidden');
             });
-            
-            document.querySelectorAll('nav a').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                     if (this.getAttribute('href').startsWith('#')) {
-                        e.preventDefault();
-                        document.querySelector(this.getAttribute('href')).scrollIntoView({
-                            behavior: 'smooth'
-                        });
-                        if (!mobileMenu.classList.contains('hidden')) {
-                             mobileMenu.classList.add('hidden');
-                        }
-                     }
-                });
+            document.querySelectorAll('.mobile-nav-link').forEach(link => {
+                link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
             });
-
 
             const heroBg = document.getElementById('hero-bg');
             if (heroBg) {
@@ -387,6 +372,15 @@
             }, { threshold: 0.1 });
             document.querySelectorAll('.scroll-target').forEach(el => observer.observe(el));
 
+            document.querySelectorAll('.collapsible-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const arrow = header.querySelector('.arrow');
+                    content.classList.toggle('hidden');
+                    arrow.classList.toggle('rotate-90');
+                });
+            });
+
             const upcomingGrids = {
                 coop: document.getElementById('upcoming-coop-games-grid'),
                 singleplayer: document.getElementById('upcoming-singleplayer-games-grid'),
@@ -397,20 +391,23 @@
                 singleplayer: document.getElementById('no-upcoming-singleplayer-games'),
                 not_free: document.getElementById('no-upcoming-not-free-games')
             };
+            const upcomingLoadMoreButtons = {
+                coop: document.getElementById('load-more-upcoming-coop'),
+                singleplayer: document.getElementById('load-more-upcoming-singleplayer'),
+                not_free: document.getElementById('load-more-upcoming-not-free')
+            };
             
             const releasedGamesGrid = document.getElementById('released-games-grid');
             const noReleasedGamesMsg = document.getElementById('no-released-games');
 
-
             const fetchedDataCache = new Map();
             async function fetchSteamGameData(steamUrl) {
-                if (fetchedDataCache.has(steamUrl)) {
-                    return fetchedDataCache.get(steamUrl);
-                }
+                if (fetchedDataCache.has(steamUrl)) return fetchedDataCache.get(steamUrl);
+                
                 const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(steamUrl)}`;
                 try {
                     const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+                    if (!response.ok) throw new Error(`Network response was not ok`);
                     const htmlText = await response.text();
                     const doc = new DOMParser().parseFromString(htmlText, 'text/html');
                     const data = {
@@ -422,18 +419,19 @@
                     fetchedDataCache.set(steamUrl, data);
                     return data;
                 } catch (error) {
-                    console.error(`Failed to fetch Steam game data for ${steamUrl}:`, error);
-                    return null;
+                    console.error("Failed to fetch Steam game data for:", steamUrl, error);
+                    return null; // Return null on failure to handle gracefully
                 }
             }
 
-            function createGameCard(game) {
+            function createGameCard(game, isHidden = false) {
                  const steamWebUrl = game.url;
                  const appId = steamWebUrl.split('/')[4];
                  const steamAppUrl = `steam://store/${appId}`;
+                 const hiddenClass = isHidden ? 'hidden' : '';
 
                  return `
-                    <div class="card p-6 rounded-lg text-center" data-url="${steamWebUrl}">
+                    <div class="card p-6 rounded-lg text-center ${hiddenClass}" data-url="${steamWebUrl}">
                         <img src="${game.image}" alt="${game.title} Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
                         <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${game.title}</h3>
                         <p class="text-gray-400 mb-4 h-24 overflow-hidden text-ellipsis">${game.description}</p>
@@ -447,11 +445,8 @@
             });
             
             async function displayGames(docs) {
-                Object.values(upcomingGrids).forEach(grid => grid.innerHTML = '');
-                Object.values(upcomingNoGamesMsgs).forEach(msg => msg.classList.add('hidden'));
-
                 const upcomingDocs = { coop: [], singleplayer: [], not_free: [] };
-                const releasedDocs = [];
+                let releasedDocs = [];
                 
                 docs.forEach(doc => {
                     const data = doc.data();
@@ -465,64 +460,67 @@
                     }
                 });
                 
-                await renderCategorizedGames(upcomingGrids, upcomingNoGamesMsgs, upcomingDocs);
+                await renderCategorizedGames(upcomingGrids, upcomingNoGamesMsgs, upcomingLoadMoreButtons, upcomingDocs);
                 await renderSimpleGameList(releasedGamesGrid, noReleasedGamesMsg, releasedDocs);
             }
 
-            async function renderCategorizedGames(grids, noGamesMsgs, categorizedDocs) {
+            async function renderCategorizedGames(grids, noGamesMsgs, loadMoreButtons, categorizedDocs) {
                  for (const category in categorizedDocs) {
                     const grid = grids[category];
                     const noGamesMsg = noGamesMsgs[category];
+                    const loadMoreBtn = loadMoreButtons[category];
                     const docsForCategory = categorizedDocs[category];
+                    
+                    grid.innerHTML = '';
+                    noGamesMsg.classList.add('hidden');
+                    loadMoreBtn.classList.add('hidden');
 
                     if (docsForCategory.length === 0) {
                         noGamesMsg.classList.remove('hidden');
                         continue;
                     }
                     
-                    const fetchPromises = docsForCategory.map(doc => fetchSteamGameData(doc.url).catch(e => null));
-                    const gameDataArray = await Promise.all(fetchPromises);
+                    const fetchPromises = docsForCategory.map(doc => fetchSteamGameData(doc.url));
+                    const gameDataArray = (await Promise.all(fetchPromises)).filter(Boolean); // Filter out nulls from failed fetches
                     
-                    grid.innerHTML = '';
-                    gameDataArray.forEach(gameData => {
-                        if (gameData) {
-                            grid.innerHTML += createGameCard(gameData);
-                        }
+                    let gridHtml = '';
+                    gameDataArray.forEach((gameData, index) => {
+                        gridHtml += createGameCard(gameData, index >= 3);
                     });
+                    grid.innerHTML = gridHtml;
+
+                    if (gameDataArray.length > 3) {
+                        loadMoreBtn.classList.remove('hidden');
+                        const newBtn = loadMoreBtn.cloneNode(true); // Clone to remove old listeners
+                        loadMoreBtn.parentNode.replaceChild(newBtn, loadMoreBtn);
+                        
+                        newBtn.addEventListener('click', () => {
+                            grid.querySelectorAll('.card.hidden').forEach(card => card.classList.remove('hidden'));
+                            newBtn.classList.add('hidden');
+                        });
+                    }
                 }
             }
 
             async function renderSimpleGameList(grid, noGamesMsg, docs) {
+                noGamesMsg.classList.add('hidden');
+                grid.innerHTML = '';
+
                 if (docs.length === 0) {
                     noGamesMsg.classList.remove('hidden');
-                    grid.innerHTML = '';
                     return;
                 }
-
-                noGamesMsg.classList.add('hidden');
                 
                 const uniqueDocs = Array.from(new Map(docs.map(doc => [doc.url, doc])).values());
-                const fetchPromises = uniqueDocs.map(doc => fetchSteamGameData(doc.url).catch(e => null));
-                const gameDataArray = await Promise.all(fetchPromises);
+                const fetchPromises = uniqueDocs.map(doc => fetchSteamGameData(doc.url));
+                const gameDataArray = (await Promise.all(fetchPromises)).filter(Boolean);
                 
-                grid.innerHTML = '';
+                let gridHtml = '';
                 gameDataArray.forEach(gameData => {
-                    if (gameData) {
-                        grid.innerHTML += createGameCard(gameData);
-                    }
+                    gridHtml += createGameCard(gameData, false);
                 });
+                grid.innerHTML = gridHtml;
             }
-
-            // Collapsible categories
-            document.querySelectorAll('.collapsible-header').forEach(header => {
-                header.addEventListener('click', () => {
-                    const content = header.nextElementSibling;
-                    const icon = header.querySelector('svg');
-
-                    content.classList.toggle('collapsed');
-                    icon.classList.toggle('collapsed');
-                });
-            });
         });
     </script>
 </body>
