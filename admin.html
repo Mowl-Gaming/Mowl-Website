@@ -67,26 +67,6 @@
         }
         .game-card { transition: background-color 0.2s ease; }
         .game-card:hover { background-color: rgba(74, 222, 128, 0.1); }
-        #suggestions-container {
-            position: absolute;
-            background: #1a1a3a;
-            border: 1px solid #4ade80;
-            border-radius: 0.5rem;
-            width: 100%;
-            z-index: 10;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .suggestion-item {
-            padding: 0.75rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .suggestion-item:hover {
-            background-color: rgba(74, 222, 128, 0.1);
-        }
     </style>
 </head>
 <body class="antialiased">
@@ -119,15 +99,12 @@
                 
                 <div class="mb-8">
                     <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
-                    <div class="relative">
-                        <div class="flex items-center space-x-2">
-                            <input type="text" id="steam-url-input" class="form-input w-full p-3 rounded" placeholder="Steam URL oder Spielname..." autocomplete="off">
-                            <button id="add-game-btn" class="btn-cyber py-3 px-6 font-bold flex items-center justify-center shrink-0">
-                                <span id="add-game-text">Hinzufügen</span>
-                                <div id="add-game-loader" class="loader hidden"></div>
-                            </button>
-                        </div>
-                        <div id="suggestions-container" class="hidden mt-2"></div>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="steam-url-input" class="form-input w-full p-3 rounded" placeholder="Steam URL oder Spielname..." autocomplete="off">
+                        <button id="add-game-btn" class="btn-cyber py-3 px-6 font-bold flex items-center justify-center shrink-0">
+                            <span id="add-game-text">Hinzufügen</span>
+                            <div id="add-game-loader" class="loader hidden"></div>
+                        </button>
                     </div>
                      <p id="add-game-error" class="text-red-500 mt-2 h-4 text-sm"></p>
                 </div>
@@ -193,7 +170,6 @@
         const errorMsg = document.getElementById('error-msg');
         
         const steamUrlInput = document.getElementById('steam-url-input');
-        const suggestionsContainer = document.getElementById('suggestions-container');
         const addGameBtn = document.getElementById('add-game-btn');
         const addGameText = document.getElementById('add-game-text');
         const addGameLoader = document.getElementById('add-game-loader');
@@ -216,15 +192,6 @@
         let gamesData = [];
         const SESSION_KEY = 'mowl-admin-auth';
 
-        // --- Hilfsfunktionen ---
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
-
         async function sha256(message) {
             const msgBuffer = new TextEncoder().encode(message);
             const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -232,7 +199,6 @@
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // --- Authentifizierung ---
         async function handleLogin() {
             const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d'; // "mowladmin"
             const enteredHash = await sha256(passwordInput.value);
@@ -256,55 +222,23 @@
             dashboardSection.classList.remove('hidden');
             loadGames();
         }
-
-        // --- Steam API Interaktionen ---
-        const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-
-        async function fetchSuggestions(term) {
-            if (term.length < 3) {
-                suggestionsContainer.innerHTML = '';
-                suggestionsContainer.classList.add('hidden');
-                return;
-            }
-            const suggestUrl = `https://store.steampowered.com/search/suggest?term=${encodeURIComponent(term)}&f=games&cc=DE&l=german`;
-            
-            try {
-                const response = await fetch(PROXY_URL(suggestUrl));
-                if (!response.ok) return;
-                const data = await response.json();
-                const htmlText = data.contents;
-                const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-                
-                suggestionsContainer.innerHTML = '';
-                const suggestions = doc.querySelectorAll('.search_suggestion_row');
-                if (suggestions.length === 0) {
-                    suggestionsContainer.classList.add('hidden');
-                    return;
-                }
-                
-                suggestions.forEach(sugg => {
-                    const name = sugg.querySelector('.match_name').textContent;
-                    const img = sugg.querySelector('.match_img img').src;
-                    const url = sugg.href;
-
-                    const item = document.createElement('div');
-                    item.className = 'suggestion-item';
-                    item.innerHTML = `<img src="${img}" class="w-16 h-auto"><span class="font-semibold">${name}</span>`;
-                    item.addEventListener('click', () => {
-                        steamUrlInput.value = url;
-                        suggestionsContainer.innerHTML = '';
-                        suggestionsContainer.classList.add('hidden');
-                    });
-                    suggestionsContainer.appendChild(item);
-                });
-                suggestionsContainer.classList.remove('hidden');
-
-            } catch(e) {
-                console.error("Suggestion fetch failed", e);
-                suggestionsContainer.classList.add('hidden');
-            }
-        }
         
+        const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        
+        async function searchSteamForGame(gameName) {
+            const searchUrl = `https://store.steampowered.com/search/results?term=${encodeURIComponent(gameName)}`;
+            const response = await fetch(PROXY_URL(searchUrl));
+            if (!response.ok) throw new Error('Steam-Suche ist fehlgeschlagen.');
+            const data = await response.json();
+            const htmlText = data.contents;
+            const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+            const firstResult = doc.querySelector('a.search_result_row');
+            if (!firstResult) {
+                throw new Error(`Kein Spiel namens "${gameName}" gefunden.`);
+            }
+            return firstResult.href;
+        }
+
         async function fetchAndParseSteamPage(steamUrl) {
             const response = await fetch(PROXY_URL(steamUrl));
             if (!response.ok) throw new Error('Steam-Seite konnte nicht geladen werden.');
@@ -331,16 +265,11 @@
             return { tags: Array.from(tags), title };
         }
 
-        // --- Spiel-Management (Hinzufügen, Löschen, Updaten) ---
         async function handleAddGame() {
-            const url = steamUrlInput.value.trim();
-            if (!url.startsWith('https://store.steampowered.com/app/')) {
-                 addGameError.textContent = 'Bitte wähle einen Vorschlag oder gib eine gültige Steam URL ein.';
+            const urlOrName = steamUrlInput.value.trim();
+            if (!urlOrName) {
+                 addGameError.textContent = 'Bitte eine URL oder einen Spielnamen eingeben.';
                  return;
-            }
-            if (gamesData.some(game => game.url === url)) {
-                addGameError.textContent = 'Dieses Spiel wurde bereits hinzugefügt.';
-                return;
             }
 
             addGameBtn.disabled = true;
@@ -349,9 +278,20 @@
             addGameError.textContent = '';
 
             try {
-                const { tags, title } = await fetchAndParseSteamPage(url);
+                let gameUrl;
+                if (urlOrName.startsWith('https://store.steampowered.com/app/')) {
+                    gameUrl = urlOrName;
+                } else {
+                    gameUrl = await searchSteamForGame(urlOrName);
+                }
+                
+                if (gamesData.some(game => game.url === gameUrl)) {
+                    throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
+                }
+
+                const { tags, title } = await fetchAndParseSteamPage(gameUrl);
                 await addDoc(gamesCollection, { 
-                    url: url, 
+                    url: gameUrl, 
                     title, 
                     tags, 
                     status: 'upcoming',
@@ -388,7 +328,6 @@
             await updateDoc(docRef, { tags: Array.from(currentTags) });
         }
 
-        // --- Rendering ---
         function createGameElement(game) {
             const gameEl = document.createElement('div');
             gameEl.className = 'game-card bg-gray-900/50 p-4 rounded-lg cursor-grab';
@@ -469,7 +408,7 @@
         }
 
         function loadGames() {
-            const q = query(gamesCollection); // Query without ordering
+            const q = query(gamesCollection);
             onSnapshot(q, (snapshot) => {
                 gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
@@ -483,7 +422,6 @@
             });
         }
 
-        // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem(SESSION_KEY) === 'true') showDashboard();
 
@@ -491,22 +429,7 @@
             passwordInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleLogin(); });
             logoutBtn.addEventListener('click', handleLogout);
             addGameBtn.addEventListener('click', handleAddGame);
-            
-            steamUrlInput.addEventListener('input', debounce((e) => {
-                const term = e.target.value;
-                if (!term.startsWith('https://')) {
-                    fetchSuggestions(term);
-                } else {
-                    suggestionsContainer.classList.add('hidden');
-                }
-            }, 300));
-            
-            document.addEventListener('click', (e) => {
-                if (!steamUrlInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-                    suggestionsContainer.classList.add('hidden');
-                }
-            });
-
+            steamUrlInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleAddGame(); });
             searchInput.addEventListener('input', renderGames);
 
             cancelDeleteBtn.addEventListener('click', () => {
@@ -543,4 +466,3 @@
     </script>
 </body>
 </html>
-
