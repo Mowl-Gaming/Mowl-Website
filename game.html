@@ -100,10 +100,10 @@
             const images = gameData.memoryImages || [];
 
             if (images.length > 0) {
-                images.forEach(img => {
+                images.forEach(imageUrl => {
                     galleryHtml += `
                         <div class="overflow-hidden rounded-lg">
-                            <img src="${img.url}" alt="Erinnerung für ${gameData.title}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300">
+                            <img src="${imageUrl}" alt="Erinnerung für ${gameData.title}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300">
                         </div>
                     `;
                 });
