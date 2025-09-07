@@ -33,6 +33,15 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .gallery-item {
+            cursor: pointer;
+        }
+        #lightbox-modal {
+            transition: opacity 0.3s ease;
+        }
+        #lightbox-image {
+             box-shadow: 0 0 25px rgba(74, 222, 128, 0.5);
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -52,6 +61,14 @@
         <!-- Content will be injected here -->
     </main>
     
+    <!-- Lightbox Modal -->
+    <div id="lightbox-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[100]">
+        <button id="lightbox-close" class="absolute top-6 right-8 text-white text-5xl font-bold hover:text-gray-400 transition-colors">&times;</button>
+        <button id="lightbox-prev" class="absolute left-4 md:left-8 text-white text-5xl font-bold hover:text-gray-400 transition-colors">&#8249;</button>
+        <img id="lightbox-image" src="" class="max-w-[90vw] max-h-[85vh] rounded-lg border-2 border-green-500/50">
+        <button id="lightbox-next" class="absolute right-4 md:right-8 text-white text-5xl font-bold hover:text-gray-400 transition-colors">&#8250;</button>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -100,9 +117,9 @@
             const images = gameData.memoryImages || [];
 
             if (images.length > 0) {
-                images.forEach(imageData => {
+                images.forEach((imageData, index) => {
                     galleryHtml += `
-                        <div class="overflow-hidden rounded-lg">
+                        <div class="gallery-item overflow-hidden rounded-lg" data-index="${index}">
                             <img src="${imageData}" alt="Erinnerung für ${gameData.title}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300">
                         </div>
                     `;
@@ -118,13 +135,64 @@
                     <p class="text-lg text-gray-400 max-w-3xl mx-auto mb-12">${gameData.description || 'Keine Beschreibung verfügbar.'}</p>
                     
                     <h2 class="text-4xl font-orbitron font-bold mb-8 border-t border-green-500/20 pt-12">Erinnerungen</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div id="memory-gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${galleryHtml}
                     </div>
                 </div>
             `;
             loader.style.display = 'none';
             contentContainer.innerHTML = pageHtml;
+            
+            setupLightbox(images);
+        }
+        
+        function setupLightbox(images) {
+            if (images.length === 0) return;
+
+            const lightboxModal = document.getElementById('lightbox-modal');
+            const lightboxImage = document.getElementById('lightbox-image');
+            const lightboxClose = document.getElementById('lightbox-close');
+            const lightboxPrev = document.getElementById('lightbox-prev');
+            const lightboxNext = document.getElementById('lightbox-next');
+            const gallery = document.getElementById('memory-gallery');
+            let currentIndex = 0;
+
+            function showImage(index) {
+                if (index < 0 || index >= images.length) return;
+                currentIndex = index;
+                lightboxImage.src = images[currentIndex];
+                lightboxPrev.style.display = index === 0 ? 'none' : 'block';
+                lightboxNext.style.display = index === images.length - 1 ? 'none' : 'block';
+            }
+
+            function openLightbox(index) {
+                lightboxModal.classList.remove('hidden');
+                lightboxModal.classList.add('flex');
+                showImage(index);
+            }
+
+            function closeLightbox() {
+                lightboxModal.classList.add('hidden');
+                lightboxModal.classList.remove('flex');
+            }
+            
+            gallery.addEventListener('click', (e) => {
+                const item = e.target.closest('.gallery-item');
+                if (item) {
+                    openLightbox(parseInt(item.dataset.index));
+                }
+            });
+
+            lightboxClose.addEventListener('click', closeLightbox);
+            lightboxPrev.addEventListener('click', () => showImage(currentIndex - 1));
+            lightboxNext.addEventListener('click', () => showImage(currentIndex + 1));
+            
+            document.addEventListener('keydown', (e) => {
+                if (lightboxModal.classList.contains('hidden')) return;
+                if (e.key === 'ArrowRight') lightboxNext.click();
+                if (e.key === 'ArrowLeft') lightboxPrev.click();
+                if (e.key === 'Escape') closeLightbox();
+            });
         }
 
         document.addEventListener('DOMContentLoaded', loadGameDetails);
