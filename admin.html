@@ -163,7 +163,6 @@
                 <div id="drop-zone-content">
                     <p class="text-gray-400">Bilder hierher ziehen oder</p>
                     <label for="image-upload-input" class="text-green-400 font-semibold cursor-pointer hover:underline">Dateien auswählen</label>
-                    <p class="text-xs text-gray-500 mt-2">(Bilder unter 750KB empfohlen)</p>
                 </div>
                 <input type="file" id="image-upload-input" accept="image/*" class="hidden" multiple>
              </div>
@@ -436,12 +435,48 @@
             });
         }
         
-        function fileToBase64(file) {
+        function compressImage(file, maxSizeInBytes = 750 * 1024) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        let width = img.width;
+                        let height = img.height;
+                        const max_width = 1920;
+                        
+                        if (width > max_width) {
+                            height *= max_width / width;
+                            width = max_width;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        let quality = 0.9;
+                        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                        // Iteratively reduce quality until the size is acceptable
+                        while (dataUrl.length > maxSizeInBytes && quality > 0.1) {
+                            quality -= 0.1;
+                            dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        }
+
+                        if (dataUrl.length > maxSizeInBytes) {
+                            return reject(new Error('Bild konnte nicht ausreichend komprimiert werden.'));
+                        }
+                        
+                        resolve(dataUrl);
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
             });
         }
 
@@ -449,15 +484,15 @@
             if (!files || files.length === 0 || !activeGameIdForImages) return;
             
             const originalHTML = dropZoneContent.innerHTML;
-            dropZoneContent.innerHTML = '<div class="loader mx-auto"></div><p class="mt-2 text-gray-400">Lade Bilder hoch...</p>';
+            dropZoneContent.innerHTML = '<div class="loader mx-auto"></div><p class="mt-2 text-gray-400">Komprimiere & lade Bilder hoch...</p>';
             
-            const imagePromises = Array.from(files).map(file => {
-                if (file.size > 750 * 1024) { 
-                    showNotification(`Bild "${file.name}" ist zu groß (max. 750KB).`);
-                    return Promise.resolve(null);
-                }
-                return fileToBase64(file);
-            });
+            const imagePromises = Array.from(files).map(file => 
+                compressImage(file).catch(err => {
+                    console.error(`Komprimierungsfehler für ${file.name}:`, err);
+                    showNotification(`Bild "${file.name}" konnte nicht verarbeitet werden.`);
+                    return null;
+                })
+            );
 
             try {
                 const base64Images = (await Promise.all(imagePromises)).filter(Boolean);
