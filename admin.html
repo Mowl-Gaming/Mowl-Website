@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mowl - Die Zukunft des Gamings</title>
+    <title>Mowl Admin Dashboard</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230a0a1a'/><path d='M20 80V20 H35 L50 45 L65 20 H80 V80 H65 V40 L50 65 L35 40 V80 Z' fill='%234ade80'/></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,10 +13,10 @@
         :root {
             --glow-green: 0 0 5px rgba(74, 222, 128, 0.8), 0 0 10px rgba(74, 222, 128, 0.6), 0 0 20px rgba(74, 222, 128, 0.4), 0 0 40px rgba(74, 222, 128, 0.2);
         }
-        html { scroll-behavior: smooth; }
         body {
-            background-color: #0a0a1a; color: #e0e0e0; font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
+            background-color: #0a0a1a;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
             background-image:
                 radial-gradient(circle at 1% 1%, #1a1a3a 1px, transparent 2px),
                 radial-gradient(circle at 99% 99%, #1a1a3a 1px, transparent 2px);
@@ -25,58 +25,58 @@
         .font-orbitron { font-family: 'Orbitron', sans-serif; }
         .text-glow-green { text-shadow: var(--glow-green); }
         .btn-cyber {
-            position: relative; border: 1px solid #4ade80; color: #4ade80;
-            overflow: hidden; transition: all 0.3s ease;
-            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+            position: relative; border: 1px solid #4ade80; color: #4ade80; overflow: hidden;
+            transition: all 0.3s ease; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
         }
         .btn-cyber::before {
             content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
             background: linear-gradient(90deg, transparent, #4ade80, transparent); transition: left 0.4s ease;
         }
-        .btn-cyber:hover { color: #0a0a1a; background-color: #4ade80; box-shadow: var(--glow-green); }
+        .btn-cyber:hover, .btn-cyber:disabled { color: #0a0a1a; background-color: #4ade80; box-shadow: var(--glow-green); }
+        .btn-cyber:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-cyber:hover::before { left: 100%; }
-
-        .card-link {
-            display: block;
-            height: 100%;
-            transition: opacity 0.5s ease;
+        .form-input, .status-select {
+            background: rgba(10, 10, 26, 0.8);
+            border: 1px solid rgba(74, 222, 128, 0.4);
+            color: #e0e0e0;
         }
-        .card-link .card { transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease; }
-        .card-link:hover .card {
-            transform: translateY(-10px);
-            box-shadow: 0 0 15px rgba(74, 222, 128, 0.4), 0 0 30px rgba(74, 222, 128, 0.2);
+        .form-input:focus, .status-select:focus {
+            outline: none;
+            border-color: #4ade80;
+            box-shadow: var(--glow-green);
         }
-        .card {
-            background: rgba(15, 15, 35, 0.5); backdrop-filter: blur(10px);
-            border: 1px solid rgba(74, 222, 128, 0.2);
-            position: relative; overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
+        .status-select option {
+            background-color: #0a0a1a;
+            color: #e0e0e0;
         }
-        .card::before {
-            content: ''; position: absolute; top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: conic-gradient(transparent, rgba(74, 222, 128, 0.2), transparent 30%);
-            animation: rotate 6s linear infinite; opacity: 0; transition: opacity 0.4s ease;
-            z-index: 0; 
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-left-color: #4ade80;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
         }
-        .card-link:hover .card::before, .card:hover::before { opacity: 1; }
-        .card > * { position: relative; z-index: 1; }
-
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        .section-header {
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
-            border-left: 2px solid #4ade80; border-bottom: 2px solid #4ade80;
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .custom-checkbox {
+            appearance: none; background-color: #1a1a3a; border: 1px solid #4a5568;
+            border-radius: 4px; width: 1.25rem; height: 1.25rem;
+            display: inline-block; position: relative; cursor: pointer; transition: background-color 0.2s ease;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 1s ease-out forwards; }
-        .scroll-target { opacity: 0; }
-        .collapsible-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
-        .arrow { transition: transform 0.3s ease; }
-        .arrow.rotate-90 { transform: rotate(90deg); }
-        .collapsible-content { transition: max-height 0.5s ease-out; overflow: hidden; }
+        .custom-checkbox:checked { background-color: #4ade80; border-color: #4ade80; }
+        .custom-checkbox:checked::after {
+            content: '✓'; font-size: 1rem; color: #0a0a1a;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        }
+        .modal { transition: opacity 0.3s ease, visibility 0.3s ease; }
+        table tbody tr { transition: background-color 0.2s ease; }
+        table tbody tr:hover { background-color: rgba(74, 222, 128, 0.05); }
+        
+        #drop-zone.drag-over {
+            border-color: #4ade80;
+            box-shadow: var(--glow-green);
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -84,153 +84,103 @@
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-lg">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="#" class="text-3xl font-bold font-orbitron text-glow-green cursor-pointer">MOWL</a>
-            <nav class="hidden md:flex space-x-8">
-                <a href="#about" class="text-lg hover:text-green-400">Über Uns</a>
-                <a href="#upcoming-games" class="text-lg hover:text-green-400">Ausstehende Spiele</a>
-                <a href="#games" class="text-lg hover:text-green-400">Spiele</a>
-                <a href="#played-games" class="text-lg hover:text-green-400">Bereits gespielt</a>
-                <a href="#team" class="text-lg hover:text-green-400">Team</a>
-                <a href="#contact" class="text-lg hover:text-green-400">Kontakt</a>
-            </nav>
-            <button id="mobile-menu-button" class="md:hidden p-2">
-                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
-                </svg>
-            </button>
-        </div>
-        <div id="mobile-menu" class="md:hidden hidden px-6 pb-4 space-y-2">
-             <a href="#about" class="mobile-nav-link block text-lg">Über Uns</a>
-             <a href="#upcoming-games" class="mobile-nav-link block text-lg">Ausstehende Spiele</a>
-             <a href="#games" class="mobile-nav-link block text-lg">Spiele</a>
-             <a href="#played-games" class="mobile-nav-link block text-lg">Bereits gespielt</a>
-             <a href="#team" class="mobile-nav-link block text-lg">Team</a>
-             <a href="#contact" class="mobile-nav-link block text-lg">Kontakt</a>
+            <a href="index.html" class="text-3xl font-bold font-orbitron text-glow-green cursor-pointer">MOWL</a>
         </div>
     </header>
 
-    <main>
-        <!-- Hero Section -->
-        <section class="min-h-screen flex items-center justify-center text-center overflow-hidden relative">
-            <div id="hero-bg" class="absolute inset-0 z-[-1]"></div>
-            <div class="container mx-auto px-6 z-10">
-                <h2 class="text-5xl md:text-7xl lg:text-8xl font-orbitron font-black uppercase text-glow-green animate-pulse">Mowl</h2>
-                <p class="mt-4 text-xl md:text-2xl lg:text-3xl font-semibold">Wir Definieren die <span class="text-pink-500">Zukunft</span> des Gamings.</p>
-                <a href="#about" class="mt-12 inline-block btn-cyber text-xl font-bold py-3 px-8">ENTDECKE MEHR</a>
+    <main class="w-full mt-24">
+        <!-- Login Section -->
+        <div id="login-section" class="w-full max-w-md mx-auto">
+            <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg text-center">
+                <h1 class="text-3xl font-orbitron font-bold mb-6 text-glow-green">Admin Login</h1>
+                <input type="password" id="password-input" class="form-input w-full p-3 rounded mb-4 text-center" placeholder="Passwort">
+                <button id="login-btn" class="btn-cyber w-full py-3 font-bold">Anmelden</button>
+                <p id="error-msg" class="text-red-500 mt-4 h-4"></p>
             </div>
-        </section>
+        </div>
 
-        <!-- About Section -->
-        <section id="about" class="py-20 scroll-target">
-            <div class="container mx-auto px-6">
-                <div class="text-center mb-12">
-                     <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Über <span class="text-green-400">Mowl</span></h2>
+        <!-- Dashboard Section (hidden by default) -->
+        <div id="dashboard-section" class="hidden w-full max-w-7xl container mx-auto p-6">
+            <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-orbitron font-bold text-glow-green">Dashboard</h1>
+                    <button id="logout-btn" class="text-gray-400 hover:text-green-400 text-sm">Abmelden</button>
                 </div>
-                <div class="max-w-4xl mx-auto text-center text-lg leading-relaxed">
-                    <p>Mowl ist nicht nur ein Name – es ist eine Vision. Geboren aus Leidenschaft für immersive Welten und bahnbrechende Technologien, schmieden wir die nächste Generation interaktiver Unterhaltung. Wir verschieben Grenzen, brechen Regeln und erschaffen Erlebnisse, die dich nicht mehr loslassen. Willkommen in unserer Realität.</p>
-                </div>
-            </div>
-        </section>
-        
-        <!-- Upcoming Games Section -->
-        <section id="upcoming-games" class="py-20 bg-black/20 scroll-target">
-            <div class="container mx-auto px-6">
-                <div class="text-center mb-16">
-                    <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Ausstehende <span class="text-green-400">Spiele</span></h2>
-                </div>
-                <div class="space-y-16">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                     <div>
-                        <h3 class="collapsible-header text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Coop <span class="arrow text-2xl">&#9654;</span></h3>
-                        <div class="collapsible-content hidden">
-                            <div id="upcoming-coop-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-                            <div class="text-center mt-8"><button id="load-more-upcoming-coop" class="btn-cyber py-2 px-6 hidden">Mehr laden</button></div>
-                            <p id="no-upcoming-coop-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Coop-Spiele angekündigt.</p>
+                        <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="steam-url-input" class="form-input w-full p-3 rounded" placeholder="Steam URL oder Spielname..." autocomplete="off">
+                            <button id="add-game-btn" class="btn-cyber py-3 px-6 font-bold flex items-center justify-center shrink-0">
+                                <span id="add-game-text">Hinzufügen</span>
+                                <div id="add-game-loader" class="loader hidden"></div>
+                            </button>
                         </div>
+                         <p id="add-game-error" class="text-red-500 mt-2 h-4 text-sm"></p>
                     </div>
                     <div>
-                        <h3 class="collapsible-header text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Singleplayer <span class="arrow text-2xl">&#9654;</span></h3>
-                         <div class="collapsible-content hidden">
-                            <div id="upcoming-singleplayer-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-                            <div class="text-center mt-8"><button id="load-more-upcoming-singleplayer" class="btn-cyber py-2 px-6 hidden">Mehr laden</button></div>
-                            <p id="no-upcoming-singleplayer-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Singleplayer-Spiele angekündigt.</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="collapsible-header text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Not Free <span class="arrow text-2xl">&#9654;</span></h3>
-                         <div class="collapsible-content hidden">
-                            <div id="upcoming-not-free-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-                            <div class="text-center mt-8"><button id="load-more-upcoming-not-free" class="btn-cyber py-2 px-6 hidden">Mehr laden</button></div>
-                            <p id="no-upcoming-not-free-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine kostenpflichtigen Spiele angekündigt.</p>
-                        </div>
+                        <h2 class="text-xl font-orbitron mb-4">Spiele filtern</h2>
+                        <input type="search" id="search-input" class="form-input w-full p-3 rounded" placeholder="Spiele suchen...">
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- Games Section -->
-        <section id="games" class="py-20 scroll-target">
-            <div class="container mx-auto px-6">
-                <div class="text-center mb-16">
-                    <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Aktuelle <span class="text-green-400">Spiele</span></h2>
-                </div>
-                <div id="released-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-                <p id="no-released-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Spiele veröffentlicht.</p>
-            </div>
-        </section>
-
-        <!-- Played Games Section -->
-        <section id="played-games" class="py-20 bg-black/20 scroll-target">
-            <div class="container mx-auto px-6">
-                <div class="text-center mb-16">
-                    <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Bereits <span class="text-green-400">Gespielt</span></h2>
-                </div>
-                <div id="played-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-                <p id="no-played-games" class="text-gray-500 mt-8 text-center hidden">Noch keine Spiele als gespielt markiert.</p>
-            </div>
-        </section>
-        
-        <!-- Team Section -->
-        <section id="team" class="py-20 scroll-target">
-            <div class="container mx-auto px-6">
-                <div class="text-center mb-16">
-                    <h2 class="inline-block text-4xl font-orbitron font-bold uppercase mb-4 section-header pl-4 pr-8 py-2">Das <span class="text-green-400">Kernteam</span></h2>
-                </div>
-                <div class="flex flex-wrap justify-center gap-8">
-                    <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 text-center">
-                        <div class="card p-4 rounded-lg">
-                           <img src="https://i.imgur.com/gp7b4xC.png" alt="Teammitglied Mike" class="w-32 h-32 rounded-full mx-auto mb-4 border-2 border-green-400 object-cover bg-black">
-                            <h3 class="text-xl font-bold font-orbitron text-green-300">Mike</h3>
-                            <p class="text-gray-400">Community Manager</p>
-                        </div>
-                    </div>
-                    <div class="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 text-center">
-                        <div class="card p-4 rounded-lg">
-                           <img src="https://i.imgur.com/uHeQIla.png" alt="Teammitglied Powl" class="w-32 h-32 rounded-full mx-auto mb-4 border-2 border-yellow-400 object-cover">
-                            <h3 class="text-xl font-bold font-orbitron text-yellow-300">Powl</h3>
-                            <p class="text-gray-400">Chief Morale Officer</p>
-                        </div>
-                    </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="border-b border-green-500/20">
+                            <tr>
+                                <th class="p-4 font-orbitron">Titel</th>
+                                <th class="p-4 font-orbitron">Status</th>
+                                <th class="p-4 font-orbitron">Kategorien</th>
+                                <th class="p-4 font-orbitron text-right">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="games-table-body"></tbody>
+                    </table>
+                     <p id="no-games-message" class="text-gray-600 text-center p-8 hidden">Keine Spiele gefunden.</p>
                 </div>
             </div>
-        </section>
+        </div>
     </main>
 
-    <!-- Footer -->
-    <footer id="contact" class="bg-black/40 py-12 border-t border-green-500/20">
-        <div class="container mx-auto px-6 text-center">
-            <h3 class="text-3xl font-orbitron font-bold mb-4">Kontakt aufnehmen</h3>
-            <p class="max-w-md mx-auto mb-8">Hast du eine Frage oder möchtest mit uns zusammenarbeiten? Wir freuen uns, von dir zu hören.</p>
-            <a href="mailto:kontakt@mowl.dev" class="text-lg font-semibold text-green-400 hover:text-glow-green">mowlgaming.dev@gmail.com</a>
-            <p class="mt-10 text-sm text-gray-500">&copy; 2025 Mowl. Alle Rechte vorbehalten.
-                <a href="admin.html" class="cursor-pointer ml-4" title="Admin Login">&#128272;</a>
-            </p>
+    <!-- Modals -->
+    <div id="confirmation-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
+        <div class="bg-gray-900/80 border border-red-500/50 p-8 rounded-lg text-center shadow-lg max-w-sm w-full mx-4">
+            <p id="confirmation-text" class="mb-6 text-lg"></p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-btn" class="btn-cyber bg-red-600 border-red-600 text-white hover:bg-red-500 px-6 py-2">Bestätigen</button>
+                <button id="cancel-btn" class="btn-cyber px-6 py-2">Abbrechen</button>
+            </div>
         </div>
-    </footer>
+    </div>
     
+    <div id="image-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[60]">
+        <div class="bg-gray-900/80 border border-green-500/50 p-8 rounded-lg shadow-lg max-w-3xl w-full mx-4 relative">
+             <button id="close-image-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl">&times;</button>
+             <h2 id="image-modal-title" class="text-2xl font-orbitron mb-6 text-glow-green">Bilder verwalten</h2>
+             <div id="drop-zone" class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-green-500 transition-colors mb-4">
+                <p class="text-gray-400">Bilder hierher ziehen oder</p>
+                <label for="image-upload-input" class="text-green-400 font-semibold cursor-pointer hover:underline">Dateien auswählen</label>
+                <input type="file" id="image-upload-input" accept="image/*" class="hidden" multiple>
+             </div>
+             <div id="image-gallery" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-[400px] overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="notification-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[70]">
+        <div class="bg-gray-900/80 border border-green-500/50 p-8 rounded-lg text-center shadow-lg max-w-sm w-full mx-4">
+            <p id="notification-text" class="mb-6 text-lg"></p>
+            <div class="flex justify-center">
+                <button id="notification-ok-btn" class="btn-cyber px-8 py-2">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-      
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, serverTimestamp, query, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
             authDomain: "mowl-website.firebaseapp.com",
@@ -240,195 +190,316 @@
             appId: "1:181578753317:web:f44567dd561d8e7a37a6cc",
             measurementId: "G-9F6YC5NLCS"
         };
-      
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
         const gamesCollection = collection(db, "upcoming-games");
 
-        document.addEventListener('DOMContentLoaded', () => {
+        const loginSection = document.getElementById('login-section');
+        const dashboardSection = document.getElementById('dashboard-section');
+        const passwordInput = document.getElementById('password-input');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const errorMsg = document.getElementById('error-msg');
+        const steamUrlInput = document.getElementById('steam-url-input');
+        const addGameBtn = document.getElementById('add-game-btn');
+        const addGameText = document.getElementById('add-game-text');
+        const addGameLoader = document.getElementById('add-game-loader');
+        const addGameError = document.getElementById('add-game-error');
+        const searchInput = document.getElementById('search-input');
+        const gamesTableBody = document.getElementById('games-table-body');
+        const noGamesMessage = document.getElementById('no-games-message');
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const confirmBtn = document.getElementById('confirm-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const confirmationText = document.getElementById('confirmation-text');
+        const imageModal = document.getElementById('image-modal');
+        const closeImageModalBtn = document.getElementById('close-image-modal');
+        const imageModalTitle = document.getElementById('image-modal-title');
+        const imageUploadInput = document.getElementById('image-upload-input');
+        const dropZone = document.getElementById('drop-zone');
+        const imageGallery = document.getElementById('image-gallery');
+        const notificationModal = document.getElementById('notification-modal');
+        const notificationText = document.getElementById('notification-text');
+        const notificationOkBtn = document.getElementById('notification-ok-btn');
+        
+        let onConfirmAction = () => {};
+        let activeGameIdForImages = null;
+        let gamesData = [];
+        const SESSION_KEY = 'mowl-admin-auth';
 
-            const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-            mobileMenuButton.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
-            document.querySelectorAll('.mobile-nav-link').forEach(link => {
-                link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
-            });
+        function showNotification(message) {
+            notificationText.textContent = message;
+            notificationModal.classList.remove('hidden');
+        }
 
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('fade-in');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.1 });
-            document.querySelectorAll('.scroll-target').forEach(el => observer.observe(el));
+        function showConfirmation(message, callback) {
+            confirmationText.textContent = message;
+            onConfirmAction = callback;
+            confirmationModal.classList.remove('hidden');
+        }
 
-            document.querySelectorAll('.collapsible-header').forEach(header => {
-                header.addEventListener('click', () => {
-                    const content = header.nextElementSibling;
-                    const arrow = header.querySelector('.arrow');
-                    content.classList.toggle('hidden');
-                    arrow.classList.toggle('rotate-90');
-                });
-            });
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
 
-            const upcomingGrids = {
-                coop: document.getElementById('upcoming-coop-games-grid'),
-                singleplayer: document.getElementById('upcoming-singleplayer-games-grid'),
-                not_free: document.getElementById('upcoming-not-free-games-grid')
-            };
-            const upcomingNoGamesMsgs = {
-                coop: document.getElementById('no-upcoming-coop-games'),
-                singleplayer: document.getElementById('no-upcoming-singleplayer-games'),
-                not_free: document.getElementById('no-upcoming-not-free-games')
-            };
-            const upcomingLoadMoreButtons = {
-                coop: document.getElementById('load-more-upcoming-coop'),
-                singleplayer: document.getElementById('load-more-upcoming-singleplayer'),
-                not_free: document.getElementById('load-more-upcoming-not-free')
-            };
-            
-            const releasedGamesGrid = document.getElementById('released-games-grid');
-            const noReleasedGamesMsg = document.getElementById('no-released-games');
-            const playedGamesGrid = document.getElementById('played-games-grid');
-            const noPlayedGamesMsg = document.getElementById('no-played-games');
-
-            const fetchedDataCache = new Map();
-            async function fetchSteamGameData(steamUrl) {
-                if (fetchedDataCache.has(steamUrl)) return fetchedDataCache.get(steamUrl);
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(steamUrl)}`;
-                try {
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error(`Network response was not ok`);
-                    const htmlText = await response.text();
-                    const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-                    
-                    const rawTitle = doc.querySelector('meta[property="og:title"]')?.content || 'Unbekannter Titel';
-                    const cleanedTitle = rawTitle
-                        .replace(/Sparen Sie \d+% bei /i, '')
-                        .replace(/Save \d+% on /i, '')
-                        .replace(/ bei Steam/i, '')
-                        .replace(/ on Steam/i, '')
-                        .trim();
-
-                    const parsedData = {
-                         title: cleanedTitle,
-                         description: doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.',
-                         image: doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt',
-                         url: steamUrl
-                    };
-                    fetchedDataCache.set(steamUrl, parsedData);
-                    return parsedData;
-                } catch (error) {
-                    console.error("Failed to fetch Steam game data for:", steamUrl, error);
-                    return null;
-                }
+        async function handleLogin() {
+            const storedHash = 'd3e78256fd3e544a6f95119c0d769ec241b8f3cdeff4d35d2e6687e284920f2d';
+            const enteredHash = await sha256(passwordInput.value);
+            if (enteredHash === storedHash) {
+                sessionStorage.setItem(SESSION_KEY, 'true');
+                showDashboard();
+            } else {
+                errorMsg.textContent = 'Falsches Passwort.';
+                passwordInput.value = '';
             }
+        }
 
-            function createGameCard(gameData, gameId, isClickable = false, isHidden = false) {
-                 const steamWebUrl = gameData.url;
-                 const appId = steamWebUrl.split('/')[4];
-                 const steamAppUrl = `steam://store/${appId}`;
-                 const hiddenClass = isHidden ? 'hidden' : '';
-                 
-                 const cardContent = `
-                    <div class="card p-6 rounded-lg text-center">
-                        <img src="${gameData.image}" alt="${gameData.title} Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
-                        <div class="flex flex-col flex-grow justify-between">
-                             <div>
-                                <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${gameData.title}</h3>
-                                <p class="text-gray-400 mb-4 h-24 overflow-hidden text-ellipsis">${gameData.description}</p>
-                             </div>
-                             <span class="font-semibold text-green-400 hover:text-white transition-colors mt-auto">In Steam öffnen &rarr;</span>
+        function handleLogout() {
+            sessionStorage.removeItem(SESSION_KEY);
+            loginSection.classList.remove('hidden');
+            dashboardSection.classList.add('hidden');
+        }
+
+        function showDashboard() {
+            loginSection.classList.add('hidden');
+            dashboardSection.classList.remove('hidden');
+            loadGames();
+        }
+        
+        const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        
+        async function searchSteamForGame(gameName) {
+            const searchUrl = `https://store.steampowered.com/search/results?term=${encodeURIComponent(gameName)}`;
+            const response = await fetch(PROXY_URL(searchUrl));
+            if (!response.ok) throw new Error('Steam-Suche ist fehlgeschlagen.');
+            const data = await response.json();
+            const htmlText = data.contents;
+            const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+            const firstResult = doc.querySelector('a.search_result_row');
+            if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" gefunden.`);
+            return firstResult.href;
+        }
+
+        async function fetchAndParseSteamPage(steamUrl) {
+            const response = await fetch(PROXY_URL(steamUrl));
+            if (!response.ok) throw new Error('Steam-Seite konnte nicht geladen werden.');
+            const data = await response.json();
+            const htmlText = data.contents;
+            const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+
+            const tags = new Set();
+            doc.querySelectorAll('.app_tag').forEach(tagEl => {
+                const tag = tagEl.textContent.trim().toLowerCase();
+                if (['co-op', 'multiplayer', 'mehrspieler', 'ko-op', 'online co-op', 'lan co-op'].some(t => tag.includes(t))) tags.add('coop');
+                if (['single-player', 'einzelspieler'].some(t => tag.includes(t))) tags.add('singleplayer');
+            });
+            
+            const price = doc.querySelector('.game_purchase_price, .discount_final_price');
+            if (price && !price.textContent.toLowerCase().includes('free') && !price.textContent.toLowerCase().includes('kostenlos')) tags.add('not_free');
+            const title = doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel';
+            const description = doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.';
+            const image = doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt';
+            return { tags: Array.from(tags), title, description, image };
+        }
+
+        async function handleAddGame() {
+            const urlOrName = steamUrlInput.value.trim();
+            if (!urlOrName) { addGameError.textContent = 'Bitte eine URL oder einen Spielnamen eingeben.'; return; }
+            addGameBtn.disabled = true;
+            addGameText.classList.add('hidden');
+            addGameLoader.classList.remove('hidden');
+            addGameError.textContent = '';
+            try {
+                let gameUrl;
+                if (urlOrName.startsWith('https://store.steampowered.com/app/')) {
+                    gameUrl = urlOrName;
+                } else {
+                    gameUrl = await searchSteamForGame(urlOrName);
+                }
+                if (gamesData.some(game => game.url === gameUrl)) throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
+
+                const { tags, title, description, image } = await fetchAndParseSteamPage(gameUrl);
+                await addDoc(gamesCollection, { 
+                    url: gameUrl, title, description, image, tags, status: 'upcoming', createdAt: serverTimestamp(), memoryImages: [] 
+                });
+                steamUrlInput.value = '';
+            } catch (error) {
+                console.error("Error adding game:", error);
+                addGameError.textContent = error.message;
+            } finally {
+                addGameBtn.disabled = false;
+                addGameText.classList.remove('hidden');
+                addGameLoader.classList.add('hidden');
+            }
+        }
+
+        async function handleStatusChange(gameId, newStatus) {
+            await updateDoc(doc(db, "upcoming-games", gameId), { status: newStatus });
+        }
+
+        async function handleTagChange(gameId, tag, isChecked) {
+            const game = gamesData.find(g => g.id === gameId);
+            if (!game) return;
+            const currentTags = new Set(game.tags);
+            if (isChecked) currentTags.add(tag); else currentTags.delete(tag);
+            await updateDoc(doc(db, "upcoming-games", gameId), { tags: Array.from(currentTags) });
+        }
+
+        function renderGames() {
+            gamesTableBody.innerHTML = '';
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredGames = gamesData.filter(game => (game.title || '').toLowerCase().includes(searchTerm));
+
+            if (filteredGames.length === 0) {
+                noGamesMessage.classList.remove('hidden');
+                noGamesMessage.textContent = searchTerm ? 'Keine passenden Spiele gefunden.' : 'Noch keine Spiele hinzugefügt.';
+                return;
+            }
+            noGamesMessage.classList.add('hidden');
+
+            filteredGames.forEach(game => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-800';
+                const title = game.title || 'Unbekanntes Spiel';
+                
+                row.innerHTML = `
+                    <td class="p-4 font-bold">${title}</td>
+                    <td class="p-4">
+                        <select class="status-select p-2 rounded w-full">
+                            <option value="upcoming" ${game.status === 'upcoming' ? 'selected' : ''}>Ausstehend</option>
+                            <option value="released" ${game.status === 'released' ? 'selected' : ''}>Aktuell</option>
+                            <option value="played" ${game.status === 'played' ? 'selected' : ''}>Gespielt</option>
+                        </select>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" data-tag="coop" class="custom-checkbox" ${game.tags?.includes('coop') ? 'checked' : ''}><span class="text-sm">Coop</span></label>
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" data-tag="singleplayer" class="custom-checkbox" ${game.tags?.includes('singleplayer') ? 'checked' : ''}><span class="text-sm">Singleplayer</span></label>
+                            <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" data-tag="not_free" class="custom-checkbox" ${game.tags?.includes('not_free') ? 'checked' : ''}><span class="text-sm">Not Free</span></label>
                         </div>
-                    </div>
+                    </td>
+                    <td class="p-4 text-right">
+                        <div class="flex justify-end items-center space-x-2">
+                             <button class="manage-images-btn text-blue-400 hover:text-blue-300 text-sm font-semibold">Bilder</button>
+                             <button class="remove-game-btn text-red-500 hover:text-red-400 font-bold text-2xl">&times;</button>
+                        </div>
+                    </td>
                 `;
+                gamesTableBody.appendChild(row);
 
-                const wrapperClass = `card-link block h-full ${hiddenClass}`;
-
-                if (isClickable) {
-                    return `<a href="game.html?id=${gameId}" class="${wrapperClass}">${cardContent}</a>`;
-                }
-                return `<div class="${wrapperClass}" onclick="window.open('${steamAppUrl}', '_self')">${cardContent}</div>`;
-            }
-
-            onSnapshot(gamesCollection, (snapshot) => {
-                displayGames(snapshot.docs);
+                row.querySelector('.status-select').addEventListener('change', (e) => handleStatusChange(game.id, e.target.value));
+                row.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.addEventListener('change', (e) => handleTagChange(game.id, e.target.dataset.tag, e.target.checked)));
+                row.querySelector('.manage-images-btn').addEventListener('click', () => openImageManager(game.id, title));
+                row.querySelector('.remove-game-btn').addEventListener('click', () => showConfirmation(`Spiel "${title}" wirklich löschen?`, () => deleteDoc(doc(db, "upcoming-games", game.id))));
             });
+        }
+
+        function loadGames() {
+            onSnapshot(query(collection(db, "upcoming-games")), (snapshot) => {
+                gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                gamesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                renderGames();
+            });
+        }
+        
+        function openImageManager(gameId, gameTitle) {
+            activeGameIdForImages = gameId;
+            imageModalTitle.textContent = `Bilder für "${gameTitle}"`;
+            imageUploadInput.value = '';
+            displayImagesInModal();
+            imageModal.classList.remove('hidden');
+        }
+        
+        function displayImagesInModal() {
+            imageGallery.innerHTML = '<div class="loader mx-auto"></div>';
+            const game = gamesData.find(g => g.id === activeGameIdForImages);
+            const images = game?.memoryImages || [];
+            imageGallery.innerHTML = '';
+            if (images.length === 0) {
+                imageGallery.innerHTML = '<p class="text-gray-500 col-span-full text-center">Noch keine Bilder hochgeladen.</p>';
+                return;
+            }
+            images.forEach(imgData => {
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'relative group';
+                imgContainer.innerHTML = `<img src="${imgData.url}" class="w-full h-32 object-cover rounded"><button data-path="${imgData.path}" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>`;
+                imageGallery.appendChild(imgContainer);
+                imgContainer.querySelector('button').addEventListener('click', () => showConfirmation('Dieses Bild wirklich löschen?', () => handleImageDelete(imgData)));
+            });
+        }
+        
+        async function uploadFiles(files) {
+            if (!files || files.length === 0 || !activeGameIdForImages) return;
+            const originalText = dropZone.querySelector('p');
+            originalText.textContent = 'Lade Bilder hoch...';
+            dropZone.insertAdjacentHTML('afterbegin', '<div class="loader mx-auto mb-2"></div>');
             
-            async function displayGames(docs) {
-                const upcomingDocs = { coop: [], singleplayer: [], not_free: [] };
-                let releasedDocs = [];
-                let playedDocs = [];
-                
-                docs.forEach(doc => {
-                    const data = doc.data();
-                    data.id = doc.id;
-                    const tags = data.tags || [];
+            const uploadPromises = Array.from(files).map(file => {
+                const filePath = `games/${activeGameIdForImages}/${Date.now()}_${file.name}`;
+                const storageRef = ref(storage, filePath);
+                return uploadBytes(storageRef, file)
+                    .then(snapshot => getDownloadURL(snapshot.ref))
+                    .then(downloadURL => ({ url: downloadURL, path: filePath }));
+            });
 
-                    if (data.status === 'played') playedDocs.push(data);
-                    else if (data.status === 'released') releasedDocs.push(data);
-                    else { 
-                        if (tags.includes('coop')) upcomingDocs.coop.push(data);
-                        if (tags.includes('singleplayer')) upcomingDocs.singleplayer.push(data);
-                        if (tags.includes('not_free')) upcomingDocs.not_free.push(data);
-                    }
-                });
-                
-                await renderCategorizedGames(upcomingGrids, upcomingNoGamesMsgs, upcomingLoadMoreButtons, upcomingDocs);
-                await renderSimpleGameList(releasedGamesGrid, noReleasedGamesMsg, releasedDocs, true);
-                await renderSimpleGameList(playedGamesGrid, noPlayedGamesMsg, playedDocs, true);
+            try {
+                const newImages = await Promise.all(uploadPromises);
+                await updateDoc(doc(db, "upcoming-games", activeGameIdForImages), { memoryImages: arrayUnion(...newImages) });
+            } catch (error) {
+                console.error("Image upload failed:", error);
+                showNotification("Fehler beim Hochladen der Bilder.");
+            } finally {
+                imageUploadInput.value = '';
+                dropZone.innerHTML = `<p class="text-gray-400">Bilder hierher ziehen oder</p><label for="image-upload-input" class="text-green-400 font-semibold cursor-pointer hover:underline">Dateien auswählen</label>`;
             }
+        }
+        
+        async function handleImageDelete(imgData) {
+             const storageRef = ref(storage, imgData.path);
+             const docRef = doc(db, "upcoming-games", activeGameIdForImages);
+             try {
+                await deleteObject(storageRef);
+                await updateDoc(docRef, { memoryImages: arrayRemove(imgData) });
+             } catch(error) {
+                console.error("Image delete failed:", error);
+                showNotification("Fehler beim Löschen des Bildes.");
+             }
+        }
 
-            async function renderCategorizedGames(grids, noGamesMsgs, loadMoreButtons, categorizedDocs) {
-                 for (const category in categorizedDocs) {
-                    const grid = grids[category];
-                    const noGamesMsg = noGamesMsgs[category];
-                    const loadMoreBtn = loadMoreButtons[category];
-                    const docsForCategory = categorizedDocs[category];
-                    
-                    grid.innerHTML = ''; noGamesMsg.classList.add('hidden'); loadMoreBtn.classList.add('hidden');
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem(SESSION_KEY) === 'true') showDashboard();
 
-                    if (docsForCategory.length === 0) {
-                        noGamesMsg.classList.remove('hidden'); continue;
-                    }
-                    
-                    const gameDataArray = (await Promise.all(docsForCategory.map(doc => fetchSteamGameData(doc.url).then(data => (data ? {...data, id: doc.id} : null))))).filter(Boolean);
-                    
-                    let gridHtml = '';
-                    gameDataArray.forEach((gameData, index) => {
-                        gridHtml += createGameCard(gameData, gameData.id, false, index >= 3);
-                    });
-                    grid.innerHTML = gridHtml;
+            loginBtn.addEventListener('click', handleLogin);
+            passwordInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleLogin(); });
+            logoutBtn.addEventListener('click', handleLogout);
+            addGameBtn.addEventListener('click', handleAddGame);
+            steamUrlInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleAddGame(); });
+            searchInput.addEventListener('input', renderGames);
 
-                    if (gameDataArray.length > 3) {
-                        loadMoreBtn.classList.remove('hidden');
-                        const newBtn = loadMoreBtn.cloneNode(true);
-                        loadMoreBtn.parentNode.replaceChild(newBtn, loadMoreBtn);
-                        newBtn.addEventListener('click', () => {
-                            grid.querySelectorAll('.card-link.hidden').forEach(cardWrapper => cardWrapper.classList.remove('hidden'));
-                            newBtn.classList.add('hidden');
-                        });
-                    }
+            confirmBtn.addEventListener('click', () => { onConfirmAction(); confirmationModal.classList.add('hidden'); });
+            cancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden'));
+            notificationOkBtn.addEventListener('click', () => notificationModal.classList.add('hidden'));
+            closeImageModalBtn.addEventListener('click', () => imageModal.classList.add('hidden'));
+            imageUploadInput.addEventListener('change', (e) => uploadFiles(e.target.files));
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => {e.preventDefault(); e.stopPropagation();}));
+            ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.add('drag-over')));
+            ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.remove('drag-over')));
+            dropZone.addEventListener('drop', e => uploadFiles(e.dataTransfer.files));
+            
+            onSnapshot(collection(db, "upcoming-games"), (snapshot) => {
+                gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                gamesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                renderGames();
+                if (activeGameIdForImages && !imageModal.classList.contains('hidden')) {
+                    displayImagesInModal();
                 }
-            }
-
-            async function renderSimpleGameList(grid, noGamesMsg, docs, isClickable) {
-                noGamesMsg.classList.add('hidden'); grid.innerHTML = '';
-                if (docs.length === 0) {
-                    noGamesMsg.classList.remove('hidden'); return;
-                }
-                
-                const uniqueDocs = Array.from(new Map(docs.map(doc => [doc.url, doc])).values());
-                const gameDataArray = (await Promise.all(uniqueDocs.map(doc => fetchSteamGameData(doc.url).then(data => (data ? {...data, id: doc.id} : null))))).filter(Boolean);
-                
-                let gridHtml = '';
-                gameDataArray.forEach(gameData => {
-                    gridHtml += createGameCard(gameData, gameData.id, isClickable, false);
-                });
-                grid.innerHTML = gridHtml;
-            }
+            });
         });
     </script>
 </body>

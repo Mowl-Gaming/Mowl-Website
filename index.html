@@ -246,7 +246,6 @@
         const gamesCollection = collection(db, "upcoming-games");
 
         document.addEventListener('DOMContentLoaded', () => {
-
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
             mobileMenuButton.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
@@ -294,38 +293,6 @@
             const playedGamesGrid = document.getElementById('played-games-grid');
             const noPlayedGamesMsg = document.getElementById('no-played-games');
 
-            const fetchedDataCache = new Map();
-            async function fetchSteamGameData(steamUrl) {
-                if (fetchedDataCache.has(steamUrl)) return fetchedDataCache.get(steamUrl);
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(steamUrl)}`;
-                try {
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error(`Network response was not ok`);
-                    const htmlText = await response.text();
-                    const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-                    
-                    const rawTitle = doc.querySelector('meta[property="og:title"]')?.content || 'Unbekannter Titel';
-                    const cleanedTitle = rawTitle
-                        .replace(/Sparen Sie \d+% bei /i, '')
-                        .replace(/Save \d+% on /i, '')
-                        .replace(/ bei Steam/i, '')
-                        .replace(/ on Steam/i, '')
-                        .trim();
-
-                    const parsedData = {
-                         title: cleanedTitle,
-                         description: doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.',
-                         image: doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt',
-                         url: steamUrl
-                    };
-                    fetchedDataCache.set(steamUrl, parsedData);
-                    return parsedData;
-                } catch (error) {
-                    console.error("Failed to fetch Steam game data for:", steamUrl, error);
-                    return null;
-                }
-            }
-
             function createGameCard(gameData, gameId, isClickable = false, isHidden = false) {
                  const steamWebUrl = gameData.url;
                  const appId = steamWebUrl.split('/')[4];
@@ -334,11 +301,11 @@
                  
                  const cardContent = `
                     <div class="card p-6 rounded-lg text-center">
-                        <img src="${gameData.image}" alt="${gameData.title} Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
+                        <img src="${gameData.image || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt'}" alt="${gameData.title} Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
                         <div class="flex flex-col flex-grow justify-between">
                              <div>
-                                <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${gameData.title}</h3>
-                                <p class="text-gray-400 mb-4 h-24 overflow-hidden text-ellipsis">${gameData.description}</p>
+                                <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${gameData.title || 'Spiel wird geladen...'}</h3>
+                                <p class="text-gray-400 mb-4 h-24 overflow-hidden text-ellipsis">${gameData.description || ''}</p>
                              </div>
                              <span class="font-semibold text-green-400 hover:text-white transition-colors mt-auto">In Steam öffnen &rarr;</span>
                         </div>
@@ -346,7 +313,6 @@
                 `;
 
                 const wrapperClass = `card-link block h-full ${hiddenClass}`;
-
                 if (isClickable) {
                     return `<a href="game.html?id=${gameId}" class="${wrapperClass}">${cardContent}</a>`;
                 }
@@ -357,7 +323,7 @@
                 displayGames(snapshot.docs);
             });
             
-            async function displayGames(docs) {
+            function displayGames(docs) {
                 const upcomingDocs = { coop: [], singleplayer: [], not_free: [] };
                 let releasedDocs = [];
                 let playedDocs = [];
@@ -376,12 +342,12 @@
                     }
                 });
                 
-                await renderCategorizedGames(upcomingGrids, upcomingNoGamesMsgs, upcomingLoadMoreButtons, upcomingDocs);
-                await renderSimpleGameList(releasedGamesGrid, noReleasedGamesMsg, releasedDocs, true);
-                await renderSimpleGameList(playedGamesGrid, noPlayedGamesMsg, playedDocs, true);
+                renderCategorizedGames(upcomingGrids, upcomingNoGamesMsgs, upcomingLoadMoreButtons, upcomingDocs);
+                renderSimpleGameList(releasedGamesGrid, noReleasedGamesMsg, releasedDocs, true);
+                renderSimpleGameList(playedGamesGrid, noPlayedGamesMsg, playedDocs, true);
             }
 
-            async function renderCategorizedGames(grids, noGamesMsgs, loadMoreButtons, categorizedDocs) {
+            function renderCategorizedGames(grids, noGamesMsgs, loadMoreButtons, categorizedDocs) {
                  for (const category in categorizedDocs) {
                     const grid = grids[category];
                     const noGamesMsg = noGamesMsgs[category];
@@ -394,15 +360,13 @@
                         noGamesMsg.classList.remove('hidden'); continue;
                     }
                     
-                    const gameDataArray = (await Promise.all(docsForCategory.map(doc => fetchSteamGameData(doc.url).then(data => (data ? {...data, id: doc.id} : null))))).filter(Boolean);
-                    
                     let gridHtml = '';
-                    gameDataArray.forEach((gameData, index) => {
+                    docsForCategory.forEach((gameData, index) => {
                         gridHtml += createGameCard(gameData, gameData.id, false, index >= 3);
                     });
                     grid.innerHTML = gridHtml;
 
-                    if (gameDataArray.length > 3) {
+                    if (docsForCategory.length > 3) {
                         loadMoreBtn.classList.remove('hidden');
                         const newBtn = loadMoreBtn.cloneNode(true);
                         loadMoreBtn.parentNode.replaceChild(newBtn, loadMoreBtn);
@@ -414,17 +378,16 @@
                 }
             }
 
-            async function renderSimpleGameList(grid, noGamesMsg, docs, isClickable) {
+            function renderSimpleGameList(grid, noGamesMsg, docs, isClickable) {
                 noGamesMsg.classList.add('hidden'); grid.innerHTML = '';
                 if (docs.length === 0) {
                     noGamesMsg.classList.remove('hidden'); return;
                 }
                 
                 const uniqueDocs = Array.from(new Map(docs.map(doc => [doc.url, doc])).values());
-                const gameDataArray = (await Promise.all(uniqueDocs.map(doc => fetchSteamGameData(doc.url).then(data => (data ? {...data, id: doc.id} : null))))).filter(Boolean);
                 
                 let gridHtml = '';
-                gameDataArray.forEach(gameData => {
+                uniqueDocs.forEach(gameData => {
                     gridHtml += createGameCard(gameData, gameData.id, isClickable, false);
                 });
                 grid.innerHTML = gridHtml;
