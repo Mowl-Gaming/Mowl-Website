@@ -435,7 +435,7 @@
             });
         }
         
-        function compressImage(file, maxSizeInBytes = 750 * 1024) {
+        function compressImage(file, maxSizeInBytes = 750 * 1024, maxWidth = 1920) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
@@ -445,33 +445,31 @@
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        
-                        let width = img.width;
-                        let height = img.height;
-                        const max_width = 1920;
-                        
-                        if (width > max_width) {
-                            height *= max_width / width;
-                            width = max_width;
+                        let { width, height } = img;
+
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
                         }
 
                         canvas.width = width;
                         canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
-
+                        
+                        // Start with a high quality
                         let quality = 0.9;
                         let dataUrl = canvas.toDataURL('image/jpeg', quality);
-
-                        // Iteratively reduce quality until the size is acceptable
-                        while (dataUrl.length > maxSizeInBytes && quality > 0.1) {
-                            quality -= 0.1;
-                            dataUrl = canvas.toDataURL('image/jpeg', quality);
-                        }
-
-                        if (dataUrl.length > maxSizeInBytes) {
-                            return reject(new Error('Bild konnte nicht ausreichend komprimiert werden.'));
+                        
+                        // If it's still too big, reduce quality
+                        if(dataUrl.length > maxSizeInBytes) {
+                            dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                         }
                         
+                        // If it's STILL too big, give up
+                        if(dataUrl.length > 1024 * 1024) { // Final check against Firestore limit
+                             return reject(new Error('Bild konnte nicht ausreichend komprimiert werden.'));
+                        }
+
                         resolve(dataUrl);
                     };
                     img.onerror = reject;
@@ -484,15 +482,20 @@
             if (!files || files.length === 0 || !activeGameIdForImages) return;
             
             const originalHTML = dropZoneContent.innerHTML;
-            dropZoneContent.innerHTML = '<div class="loader mx-auto"></div><p class="mt-2 text-gray-400">Komprimiere & lade Bilder hoch...</p>';
+            dropZoneContent.innerHTML = '<div class="loader mx-auto"></div><p class="mt-2 text-gray-400">Verarbeite & lade Bilder hoch...</p>';
             
-            const imagePromises = Array.from(files).map(file => 
-                compressImage(file).catch(err => {
+            const imagePromises = Array.from(files).map(file => {
+                 if (!file.type.startsWith('image/')) {
+                    showNotification(`"${file.name}" ist keine gültige Bilddatei.`);
+                    return Promise.resolve(null);
+                }
+                // Always compress to ensure a reasonable size and format
+                return compressImage(file).catch(err => {
                     console.error(`Komprimierungsfehler für ${file.name}:`, err);
                     showNotification(`Bild "${file.name}" konnte nicht verarbeitet werden.`);
                     return null;
-                })
-            );
+                });
+            });
 
             try {
                 const base64Images = (await Promise.all(imagePromises)).filter(Boolean);
