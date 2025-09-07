@@ -163,6 +163,7 @@
                 <div id="drop-zone-content">
                     <p class="text-gray-400">Bilder hierher ziehen oder</p>
                     <label for="image-upload-input" class="text-green-400 font-semibold cursor-pointer hover:underline">Dateien auswählen</label>
+                    <p class="text-xs text-gray-500 mt-2">(Bilder unter 750KB empfohlen)</p>
                 </div>
                 <input type="file" id="image-upload-input" accept="image/*" class="hidden" multiple>
              </div>
@@ -182,7 +183,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, serverTimestamp, query, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, serverTimestamp, query, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
@@ -197,8 +198,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const gamesCollection = collection(db, "upcoming-games");
-
+        
         const loginSection = document.getElementById('login-section');
         const dashboardSection = document.getElementById('dashboard-section');
         const emailInput = document.getElementById('email-input');
@@ -232,6 +232,7 @@
         let onConfirmAction = () => {};
         let activeGameIdForImages = null;
         let gamesData = [];
+        let imageUnsubscribe = null;
         
         function showNotification(message) {
             notificationText.textContent = message;
@@ -262,17 +263,12 @@
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                console.error("Login failed:", error);
                 errorMsg.textContent = 'Login fehlgeschlagen. Überprüfe E-Mail/Passwort.';
             }
         }
 
         async function handleLogout() {
-            try {
-                await signOut(auth);
-            } catch(error) {
-                console.error("Logout failed:", error);
-            }
+            await signOut(auth);
         }
         
         const PROXY_URL = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`;
@@ -327,8 +323,8 @@
                 if (gamesData.some(game => game.url === gameUrl)) throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
 
                 const { tags, title, description, image } = await fetchAndParseSteamPage(gameUrl);
-                await addDoc(gamesCollection, { 
-                    url: gameUrl, title, description, image, tags, status: 'upcoming', createdAt: serverTimestamp(), memoryImages: [] 
+                await addDoc(collection(db, "upcoming-games"), { 
+                    url: gameUrl, title, description, image, tags, status: 'upcoming', createdAt: serverTimestamp()
                 });
                 steamUrlInput.value = '';
             } catch (error) {
@@ -351,6 +347,15 @@
             const currentTags = new Set(game.tags);
             if (isChecked) currentTags.add(tag); else currentTags.delete(tag);
             await updateDoc(doc(db, "upcoming-games", gameId), { tags: Array.from(currentTags) });
+        }
+        
+        async function deleteGame(gameId) {
+            const imageCollectionRef = collection(db, "upcoming-games", gameId, "memoryImages");
+            const imageSnapshot = await getDocs(imageCollectionRef);
+            const batch = writeBatch(db);
+            imageSnapshot.docs.forEach(imgDoc => batch.delete(imgDoc.ref));
+            await batch.commit();
+            await deleteDoc(doc(db, "upcoming-games", gameId));
         }
 
         function renderGames() {
@@ -398,7 +403,7 @@
                 row.querySelector('.status-select').addEventListener('change', (e) => handleStatusChange(game.id, e.target.value));
                 row.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.addEventListener('change', (e) => handleTagChange(game.id, e.target.dataset.tag, e.target.checked)));
                 row.querySelector('.manage-images-btn').addEventListener('click', () => openImageManager(game.id, title));
-                row.querySelector('.remove-game-btn').addEventListener('click', () => showConfirmation(`Spiel "${title}" wirklich löschen?`, () => deleteDoc(doc(db, "upcoming-games", game.id))));
+                row.querySelector('.remove-game-btn').addEventListener('click', () => showConfirmation(`Spiel "${title}" wirklich löschen?`, () => deleteGame(game.id)));
             });
         }
 
@@ -418,20 +423,24 @@
         }
         
         function displayImagesInModal() {
+            if(imageUnsubscribe) imageUnsubscribe();
             imageGallery.innerHTML = '<div class="loader mx-auto"></div>';
-            const game = gamesData.find(g => g.id === activeGameIdForImages);
-            const images = game?.memoryImages || [];
-            imageGallery.innerHTML = '';
-            if (images.length === 0) {
-                imageGallery.innerHTML = '<p class="text-gray-500 col-span-full text-center">Noch keine Bilder hinzugefügt.</p>';
-                return;
-            }
-            images.forEach(imageData => {
-                const imgContainer = document.createElement('div');
-                imgContainer.className = 'relative group';
-                imgContainer.innerHTML = `<img src="${imageData}" class="w-full h-32 object-cover rounded"><button data-url="${imageData}" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>`;
-                imageGallery.appendChild(imgContainer);
-                imgContainer.querySelector('button').addEventListener('click', () => showConfirmation('Dieses Bild wirklich löschen?', () => handleImageDelete(imageData)));
+            
+            const imageCollectionRef = collection(db, "upcoming-games", activeGameIdForImages, "memoryImages");
+            imageUnsubscribe = onSnapshot(query(imageCollectionRef), (snapshot) => {
+                imageGallery.innerHTML = '';
+                if (snapshot.empty) {
+                    imageGallery.innerHTML = '<p class="text-gray-500 col-span-full text-center">Noch keine Bilder hinzugefügt.</p>';
+                    return;
+                }
+                snapshot.docs.forEach(imgDoc => {
+                    const imageData = imgDoc.data().imageData;
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'relative group';
+                    imgContainer.innerHTML = `<img src="${imageData}" class="w-full h-32 object-cover rounded"><button class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>`;
+                    imageGallery.appendChild(imgContainer);
+                    imgContainer.querySelector('button').addEventListener('click', () => showConfirmation('Dieses Bild wirklich löschen?', () => deleteDoc(doc(db, "upcoming-games", activeGameIdForImages, "memoryImages", imgDoc.id))));
+                });
             });
         }
         
@@ -451,25 +460,15 @@
                             height *= maxWidth / width;
                             width = maxWidth;
                         }
-
                         canvas.width = width;
                         canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        // Start with a high quality
                         let quality = 0.9;
                         let dataUrl = canvas.toDataURL('image/jpeg', quality);
                         
-                        // If it's still too big, reduce quality
-                        if(dataUrl.length > maxSizeInBytes) {
-                            dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                        }
-                        
-                        // If it's STILL too big, give up
-                        if(dataUrl.length > 1024 * 1024) { // Final check against Firestore limit
-                             return reject(new Error('Bild konnte nicht ausreichend komprimiert werden.'));
-                        }
-
+                        if (dataUrl.length > maxSizeInBytes) dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        if (dataUrl.length > 1024 * 1024) return reject(new Error('Bild konnte nicht ausreichend komprimiert werden.'));
                         resolve(dataUrl);
                     };
                     img.onerror = reject;
@@ -489,7 +488,6 @@
                     showNotification(`"${file.name}" ist keine gültige Bilddatei.`);
                     return Promise.resolve(null);
                 }
-                // Always compress to ensure a reasonable size and format
                 return compressImage(file).catch(err => {
                     console.error(`Komprimierungsfehler für ${file.name}:`, err);
                     showNotification(`Bild "${file.name}" konnte nicht verarbeitet werden.`);
@@ -500,7 +498,13 @@
             try {
                 const base64Images = (await Promise.all(imagePromises)).filter(Boolean);
                 if (base64Images.length > 0) {
-                    await updateDoc(doc(db, "upcoming-games", activeGameIdForImages), { memoryImages: arrayUnion(...base64Images) });
+                    const batch = writeBatch(db);
+                    const imageCollectionRef = collection(db, "upcoming-games", activeGameIdForImages, "memoryImages");
+                    base64Images.forEach(imgData => {
+                        const newImageRef = doc(imageCollectionRef);
+                        batch.set(newImageRef, { imageData: imgData, createdAt: serverTimestamp() });
+                    });
+                    await batch.commit();
                 }
             } catch (error) {
                 console.error("Image upload failed:", error);
@@ -511,15 +515,6 @@
             }
         }
         
-        async function handleImageDelete(imageData) {
-             try {
-                await updateDoc(doc(db, "upcoming-games", activeGameIdForImages), { memoryImages: arrayRemove(imageData) });
-             } catch(error) {
-                console.error("Image delete failed:", error);
-                showNotification("Fehler beim Löschen des Bildes.");
-             }
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
             onAuthStateChanged(auth, handleAuthState);
 
@@ -533,22 +528,17 @@
             confirmBtn.addEventListener('click', () => { onConfirmAction(); confirmationModal.classList.add('hidden'); });
             cancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden'));
             notificationOkBtn.addEventListener('click', () => notificationModal.classList.add('hidden'));
-            closeImageModalBtn.addEventListener('click', () => imageModal.classList.add('hidden'));
+            closeImageModalBtn.addEventListener('click', () => {
+                imageModal.classList.add('hidden');
+                if(imageUnsubscribe) imageUnsubscribe();
+                activeGameIdForImages = null;
+            });
             imageUploadInput.addEventListener('change', (e) => uploadFiles(e.target.files));
 
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => {e.preventDefault(); e.stopPropagation();}));
             ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.add('drag-over')));
             ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.remove('drag-over')));
             dropZone.addEventListener('drop', e => uploadFiles(e.dataTransfer.files));
-            
-            onSnapshot(collection(db, "upcoming-games"), (snapshot) => {
-                gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                gamesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-                renderGames();
-                if (activeGameIdForImages && !imageModal.classList.contains('hidden')) {
-                    displayImagesInModal();
-                }
-            });
         });
     </script>
 </body>

@@ -71,7 +71,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, query, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
       
         const firebaseConfig = {
             apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
@@ -108,6 +108,12 @@
 
             const gameData = docSnap.data();
             
+            // Fetch images from subcollection
+            const imageCollectionRef = collection(db, "upcoming-games", gameId, "memoryImages");
+            const imageQuery = query(imageCollectionRef, orderBy("createdAt", "asc"));
+            const imageSnapshot = await getDocs(imageQuery);
+            gameData.memoryImages = imageSnapshot.docs.map(d => d.data().imageData);
+
             document.title = `${gameData.title || 'Spieldetails'} - Mowl`;
             renderPage(gameData);
         }
