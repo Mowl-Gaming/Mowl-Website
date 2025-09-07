@@ -111,7 +111,7 @@
             const imageCollectionRef = collection(db, "upcoming-games", gameId, "memoryImages");
             const imageQuery = query(imageCollectionRef, orderBy("createdAt", "asc"));
             const imageSnapshot = await getDocs(imageQuery);
-            gameData.memoryImages = imageSnapshot.docs.map(d => d.data().url);
+            gameData.memoryImages = imageSnapshot.docs.map(d => d.data().imageData);
 
             document.title = `${gameData.title || 'Spieldetails'} - Mowl`;
             renderPage(gameData);
@@ -122,10 +122,10 @@
             const images = gameData.memoryImages || [];
 
             if (images.length > 0) {
-                images.forEach((imageUrl, index) => {
+                images.forEach((imageData, index) => {
                     galleryHtml += `
                         <div class="gallery-item overflow-hidden rounded-lg" data-index="${index}">
-                            <img src="${imageUrl}" alt="Erinnerung für ${gameData.title}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300">
+                            <img src="${imageData}" alt="Erinnerung für ${gameData.title}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300">
                         </div>
                     `;
                 });
