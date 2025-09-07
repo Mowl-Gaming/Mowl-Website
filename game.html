@@ -72,27 +72,6 @@
         const contentContainer = document.getElementById('content-container');
         const loader = document.getElementById('loader');
         
-        const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-
-        async function fetchSteamGameData(steamUrl) {
-            try {
-                const response = await fetch(PROXY_URL(steamUrl));
-                if (!response.ok) throw new Error(`Network response was not ok`);
-                const data = await response.json();
-                const htmlText = data.contents;
-                const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-                return {
-                     title: doc.querySelector('meta[property="og:title"]')?.content.replace('on Steam', '').trim() || 'Unbekannter Titel',
-                     description: doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.',
-                     image: doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt',
-                     url: steamUrl
-                };
-            } catch (error) {
-                console.error("Failed to fetch Steam game data:", error);
-                return null;
-            }
-        }
-
         async function loadGameDetails() {
             const params = new URLSearchParams(window.location.search);
             const gameId = params.get('id');
@@ -110,27 +89,21 @@
                 return;
             }
 
-            const firestoreData = docSnap.data();
-            const steamData = await fetchSteamGameData(firestoreData.url);
-
-            if (!steamData) {
-                 contentContainer.innerHTML = '<p class="text-red-500">Spieldetails konnten nicht von Steam geladen werden.</p>';
-                 return;
-            }
+            const gameData = docSnap.data();
             
-            document.title = `${steamData.title} - Mowl`;
-            renderPage(steamData, firestoreData);
+            document.title = `${gameData.title || 'Spieldetails'} - Mowl`;
+            renderPage(gameData);
         }
 
-        function renderPage(steamData, firestoreData) {
+        function renderPage(gameData) {
             let galleryHtml = '';
-            const images = firestoreData.memoryImages || [];
+            const images = gameData.memoryImages || [];
 
             if (images.length > 0) {
                 images.forEach(img => {
                     galleryHtml += `
                         <div class="overflow-hidden rounded-lg">
-                            <img src="${img.url}" alt="Erinnerung für ${steamData.title}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300">
+                            <img src="${img.url}" alt="Erinnerung für ${gameData.title}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300">
                         </div>
                     `;
                 });
@@ -138,12 +111,11 @@
                 galleryHtml = '<p class="text-gray-500 md:col-span-2 lg:col-span-3 text-center">Für dieses Spiel wurden noch keine Erinnerungen hochgeladen.</p>';
             }
 
-
             const pageHtml = `
                 <div class="max-w-5xl mx-auto">
-                    <img src="${steamData.image}" alt="${steamData.title}" class="w-full h-64 md:h-96 object-cover rounded-lg mb-8 border-2 border-green-500/30">
-                    <h1 class="text-5xl font-orbitron font-bold mb-4 text-glow-green">${steamData.title}</h1>
-                    <p class="text-lg text-gray-400 max-w-3xl mx-auto mb-12">${steamData.description}</p>
+                    <img src="${gameData.image || 'https://placehold.co/1200x600/0a0a1a/ffffff?text=Bild+fehlt'}" alt="${gameData.title}" class="w-full h-64 md:h-96 object-cover rounded-lg mb-8 border-2 border-green-500/30">
+                    <h1 class="text-5xl font-orbitron font-bold mb-4 text-glow-green">${gameData.title || 'Unbekanntes Spiel'}</h1>
+                    <p class="text-lg text-gray-400 max-w-3xl mx-auto mb-12">${gameData.description || 'Keine Beschreibung verfügbar.'}</p>
                     
                     <h2 class="text-4xl font-orbitron font-bold mb-8 border-t border-green-500/20 pt-12">Erinnerungen</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
