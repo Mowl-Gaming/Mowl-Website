@@ -161,8 +161,10 @@
              <button id="close-image-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl">&times;</button>
              <h2 id="image-modal-title" class="text-2xl font-orbitron mb-6 text-glow-green">Bilder verwalten</h2>
              <div id="drop-zone" class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-green-500 transition-colors mb-4">
-                <p class="text-gray-400">Bilder hierher ziehen oder</p>
-                <label for="image-upload-input" class="text-green-400 font-semibold cursor-pointer hover:underline">Dateien auswählen</label>
+                <div id="drop-zone-content">
+                    <p class="text-gray-400">Bilder hierher ziehen oder</p>
+                    <label for="image-upload-input" class="text-green-400 font-semibold cursor-pointer hover:underline">Dateien auswählen</label>
+                </div>
                 <input type="file" id="image-upload-input" accept="image/*" class="hidden" multiple>
              </div>
              <div id="image-gallery" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-[400px] overflow-y-auto"></div>
@@ -198,6 +200,7 @@
         const storage = getStorage(app);
         const gamesCollection = collection(db, "upcoming-games");
 
+        // DOM Elements
         const loginSection = document.getElementById('login-section');
         const dashboardSection = document.getElementById('dashboard-section');
         const passwordInput = document.getElementById('password-input');
@@ -221,6 +224,7 @@
         const imageModalTitle = document.getElementById('image-modal-title');
         const imageUploadInput = document.getElementById('image-upload-input');
         const dropZone = document.getElementById('drop-zone');
+        const dropZoneContent = document.getElementById('drop-zone-content');
         const imageGallery = document.getElementById('image-gallery');
         const notificationModal = document.getElementById('notification-modal');
         const notificationText = document.getElementById('notification-text');
@@ -436,9 +440,8 @@
         
         async function uploadFiles(files) {
             if (!files || files.length === 0 || !activeGameIdForImages) return;
-            const originalText = dropZone.querySelector('p');
-            originalText.textContent = 'Lade Bilder hoch...';
-            dropZone.insertAdjacentHTML('afterbegin', '<div class="loader mx-auto mb-2"></div>');
+            const originalHTML = dropZoneContent.innerHTML;
+            dropZoneContent.innerHTML = '<div class="loader mx-auto"></div><p class="mt-2 text-gray-400">Lade Bilder hoch...</p>';
             
             const uploadPromises = Array.from(files).map(file => {
                 const filePath = `games/${activeGameIdForImages}/${Date.now()}_${file.name}`;
@@ -453,10 +456,10 @@
                 await updateDoc(doc(db, "upcoming-games", activeGameIdForImages), { memoryImages: arrayUnion(...newImages) });
             } catch (error) {
                 console.error("Image upload failed:", error);
-                showNotification("Fehler beim Hochladen der Bilder.");
+                showNotification("Fehler beim Hochladen der Bilder. Bitte überprüfe die Firebase Storage Regeln.");
             } finally {
                 imageUploadInput.value = '';
-                dropZone.innerHTML = `<p class="text-gray-400">Bilder hierher ziehen oder</p><label for="image-upload-input" class="text-green-400 font-semibold cursor-pointer hover:underline">Dateien auswählen</label>`;
+                dropZoneContent.innerHTML = originalHTML;
             }
         }
         
