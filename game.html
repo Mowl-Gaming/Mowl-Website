@@ -42,6 +42,17 @@
         #lightbox-image {
              box-shadow: 0 0 25px rgba(74, 222, 128, 0.5);
         }
+        .btn-cyber {
+            position: relative; border: 1px solid #4ade80; color: #4ade80; overflow: hidden;
+            transition: all 0.3s ease; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+        }
+        .btn-cyber::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, #4ade80, transparent); transition: left 0.4s ease;
+        }
+        .btn-cyber:hover, .btn-cyber:disabled { color: #0a0a1a; background-color: #4ade80; box-shadow: var(--glow-green); }
+        .btn-cyber:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-cyber:hover::before { left: 100%; }
     </style>
 </head>
 <body class="antialiased">
@@ -143,12 +154,27 @@
                     <div id="memory-gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${galleryHtml}
                     </div>
+
+                    <section id="gemini-recommendations" class="mt-16">
+                        <h2 class="text-4xl font-orbitron font-bold mb-8 border-t border-green-500/20 pt-12">✨ Ähnliche Spiele entdecken</h2>
+                        <div class="max-w-3xl mx-auto">
+                            <p class="text-lg text-gray-400 mb-6">
+                                Lass unsere KI basierend auf diesem Spiel neue Empfehlungen für dich finden.
+                            </p>
+                            <button id="generate-recommendations-btn" class="btn-cyber text-xl font-bold py-3 px-8">
+                                Empfehlungen generieren
+                            </button>
+                            <div id="recommendations-output" class="mt-8 text-left p-6 bg-gray-900/50 rounded-lg border border-green-500/20 hidden">
+                            </div>
+                        </div>
+                    </section>
                 </div>
             `;
             loader.style.display = 'none';
             contentContainer.innerHTML = pageHtml;
             
             setupLightbox(images);
+            setupGeminiFeature(gameData);
         }
         
         function setupLightbox(images) {
@@ -197,6 +223,57 @@
                 if (e.key === 'ArrowRight') lightboxNext.click();
                 if (e.key === 'ArrowLeft') lightboxPrev.click();
                 if (e.key === 'Escape') closeLightbox();
+            });
+        }
+
+        function setupGeminiFeature(gameData) {
+            const generateBtn = document.getElementById('generate-recommendations-btn');
+            const outputDiv = document.getElementById('recommendations-output');
+            
+            generateBtn.addEventListener('click', async () => {
+                generateBtn.disabled = true;
+                outputDiv.classList.remove('hidden');
+                outputDiv.innerHTML = '<div class="loader mx-auto"></div>';
+
+                const prompt = `Basierend auf dem Spiel '${gameData.title}' mit der Beschreibung "${gameData.description}" und den Tags "${(gameData.tags || []).join(', ')}", schlage 3 ähnliche Spiele vor. Formatiere deine Antwort genau so: Jedes Spiel auf einer neuen Zeile, beginnend mit '###', gefolgt vom Titel, einem Doppelpunkt und einer kurzen Begründung in einem Satz.`;
+                
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }]
+                };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("API-Antwort war nicht OK.");
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates[0].content.parts[0].text;
+                    
+                    const recommendations = text.split('###').filter(r => r.trim() !== '');
+                    let html = '<ul class="space-y-4">';
+                    recommendations.forEach(rec => {
+                        const parts = rec.split(':');
+                        const title = parts[0].trim();
+                        const reason = parts.slice(1).join(':').trim();
+                        html += `<li><strong class="font-orbitron text-green-300">${title}:</strong> ${reason}</li>`;
+                    });
+                    html += '</ul>';
+                    outputDiv.innerHTML = html;
+
+                } catch (error) {
+                    console.error("Fehler bei der Gemini API-Anfrage:", error);
+                    outputDiv.innerHTML = '<p class="text-red-500">Fehler: Empfehlungen konnten nicht geladen werden.</p>';
+                } finally {
+                    generateBtn.disabled = false;
+                }
             });
         }
 
