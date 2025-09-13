@@ -172,6 +172,15 @@
         </div>
     </div>
 
+    <div id="comment-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[60]">
+        <div class="bg-gray-900/80 border border-green-500/50 p-8 rounded-lg shadow-lg max-w-3xl w-full mx-4 relative">
+             <button id="close-comment-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl">&times;</button>
+             <h2 id="comment-modal-title" class="text-2xl font-orbitron mb-6 text-glow-green">Kommentar bearbeiten</h2>
+             <textarea id="comment-textarea" class="form-input w-full p-3 rounded h-48 mb-4" placeholder="Dein Fazit zum Spiel..."></textarea>
+             <button id="save-comment-btn" class="btn-cyber w-full py-2">Kommentar speichern</button>
+        </div>
+    </div>
+
     <div id="notification-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[80]">
         <div class="bg-gray-900/80 border border-green-500/50 p-8 rounded-lg text-center shadow-lg max-w-sm w-full mx-4">
             <p id="notification-text" class="mb-6 text-lg"></p>
@@ -226,12 +235,18 @@
         const dropZone = document.getElementById('drop-zone');
         const dropZoneContent = document.getElementById('drop-zone-content');
         const imageGallery = document.getElementById('image-gallery');
+        const commentModal = document.getElementById('comment-modal');
+        const closeCommentModalBtn = document.getElementById('close-comment-modal');
+        const commentModalTitle = document.getElementById('comment-modal-title');
+        const commentTextarea = document.getElementById('comment-textarea');
+        const saveCommentBtn = document.getElementById('save-comment-btn');
         const notificationModal = document.getElementById('notification-modal');
         const notificationText = document.getElementById('notification-text');
         const notificationOkBtn = document.getElementById('notification-ok-btn');
         
         let onConfirmAction = () => {};
         let activeGameIdForImages = null;
+        let activeGameIdForComment = null;
         let gamesData = [];
         let imageUnsubscribe = null;
         
@@ -325,7 +340,7 @@
 
                 const { tags, title, description, image } = await fetchAndParseSteamPage(gameUrl);
                 await addDoc(collection(db, "upcoming-games"), { 
-                    url: gameUrl, title, description, image, tags, status: 'upcoming', createdAt: serverTimestamp(), rating: null
+                    url: gameUrl, title, description, image, tags, status: 'upcoming', createdAt: serverTimestamp(), rating: null, comment: ""
                 });
                 steamUrlInput.value = '';
             } catch (error) {
@@ -350,7 +365,7 @@
             };
         }
 
-        async function handleRatingChange(gameId, newRating) {
+        const handleRatingChangeDebounced = debounce(async (gameId, newRating) => {
             const ratingValue = newRating === '' ? null : parseFloat(newRating);
             if (ratingValue !== null && (ratingValue < 0 || ratingValue > 10)) {
                 showNotification("Rating muss zwischen 0 und 10 liegen.");
@@ -362,7 +377,7 @@
                 console.error("Rating update failed:", error);
                 showNotification("Fehler beim Speichern des Ratings.");
             }
-        }
+        }, 500);
 
         async function handleTagChange(gameId, tag, isChecked) {
             const game = gamesData.find(g => g.id === gameId);
@@ -419,6 +434,7 @@
                     </td>
                     <td class="p-4 text-right">
                         <div class="flex justify-end items-center space-x-2">
+                             <button class="comment-btn text-purple-400 hover:text-purple-300 text-sm font-semibold">Kommentar</button>
                              <button class="manage-images-btn text-blue-400 hover:text-blue-300 text-sm font-semibold">Bilder</button>
                              <button class="remove-game-btn text-red-500 hover:text-red-400 font-bold text-2xl">&times;</button>
                         </div>
@@ -427,9 +443,10 @@
                 gamesTableBody.appendChild(row);
 
                 row.querySelector('.status-select').addEventListener('change', (e) => handleStatusChange(game.id, e.target.value));
-                row.querySelector('.rating-input').addEventListener('input', debounce((e) => handleRatingChange(game.id, e.target.value), 500));
+                row.querySelector('.rating-input').addEventListener('input', (e) => handleRatingChangeDebounced(game.id, e.target.value));
                 row.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.addEventListener('change', (e) => handleTagChange(game.id, e.target.dataset.tag, e.target.checked)));
                 row.querySelector('.manage-images-btn').addEventListener('click', () => openImageManager(game.id, title));
+                row.querySelector('.comment-btn').addEventListener('click', () => openCommentEditor(game.id, title, game.comment));
                 row.querySelector('.remove-game-btn').addEventListener('click', () => showConfirmation(`Spiel "${title}" wirklich löschen?`, () => deleteGame(game.id)));
             });
         }
@@ -447,6 +464,24 @@
             imageModalTitle.textContent = `Bilder für "${gameTitle}"`;
             displayImagesInModal();
             imageModal.classList.remove('hidden');
+        }
+
+        function openCommentEditor(gameId, gameTitle, currentComment) {
+            activeGameIdForComment = gameId;
+            commentModalTitle.textContent = `Kommentar für "${gameTitle}"`;
+            commentTextarea.value = currentComment || '';
+            commentModal.classList.remove('hidden');
+        }
+        
+        async function handleSaveComment() {
+            if (!activeGameIdForComment) return;
+            const newComment = commentTextarea.value.trim();
+            try {
+                await updateDoc(doc(db, "upcoming-games", activeGameIdForComment), { comment: newComment });
+                commentModal.classList.add('hidden');
+            } catch (error) {
+                showNotification("Fehler beim Speichern des Kommentars.");
+            }
         }
         
         function displayImagesInModal() {
@@ -471,7 +506,7 @@
             });
         }
         
-        function compressImage(file, maxSizeInBytes = 750 * 1024, maxWidth = 1920) {
+        function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
@@ -482,7 +517,7 @@
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
                         let { width, height } = img;
-
+                        const maxWidth = 1920;
                         if (width > maxWidth) {
                             height *= maxWidth / width;
                             width = maxWidth;
@@ -494,8 +529,8 @@
                         let quality = 0.9;
                         let dataUrl = canvas.toDataURL('image/jpeg', quality);
                         
-                        if (dataUrl.length > maxSizeInBytes) dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                        if (dataUrl.length > 1024 * 1024) return reject(new Error('Bild konnte nicht ausreichend komprimiert werden.'));
+                        if (dataUrl.length > 750 * 1024) dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        if (dataUrl.length > 1024 * 1024) return reject(new Error('Bild zu groß nach Komprimierung.'));
                         resolve(dataUrl);
                     };
                     img.onerror = reject;
@@ -560,6 +595,8 @@
                 if(imageUnsubscribe) imageUnsubscribe();
                 activeGameIdForImages = null;
             });
+            closeCommentModalBtn.addEventListener('click', () => commentModal.classList.add('hidden'));
+            saveCommentBtn.addEventListener('click', handleSaveComment);
             imageUploadInput.addEventListener('change', (e) => uploadFiles(e.target.files));
 
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => {e.preventDefault(); e.stopPropagation();}));
