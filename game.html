@@ -133,16 +133,34 @@
                 galleryHtml = '<p class="text-gray-500 md:col-span-2 lg:col-span-3 text-center">Für dieses Spiel wurden noch keine Erinnerungen hochgeladen.</p>';
             }
 
+            let additionalContentHtml = '';
+            const hasComment = gameData.comment && gameData.comment.trim() !== '';
+
+            if (hasComment) {
+                 additionalContentHtml += `
+                    <div class="border-t border-green-500/20 pt-12 mt-12">
+                        <h2 class="text-4xl font-orbitron font-bold mb-8">Unser Fazit</h2>
+                        <p class="text-lg text-gray-300 max-w-3xl mx-auto whitespace-pre-wrap text-left">${gameData.comment}</p>
+                    </div>
+                `;
+            }
+
+             additionalContentHtml += `
+                <div class="${hasComment ? 'border-t border-green-500/20 pt-12 mt-12' : 'border-t border-green-500/20 pt-12 mt-12'}">
+                    <h2 class="text-4xl font-orbitron font-bold mb-8">Erinnerungen</h2>
+                    <div id="memory-gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${galleryHtml}
+                    </div>
+                </div>
+            `;
+
+
             const pageHtml = `
                 <div class="max-w-5xl mx-auto">
                     <img src="${gameData.image || 'https://placehold.co/1200x600/0a0a1a/ffffff?text=Bild+fehlt'}" alt="${gameData.title}" class="w-full h-64 md:h-96 object-cover rounded-lg mb-8 border-2 border-green-500/30">
                     <h1 class="text-5xl font-orbitron font-bold mb-4 text-glow-green">${gameData.title || 'Unbekanntes Spiel'}</h1>
                     <p class="text-lg text-gray-400 max-w-3xl mx-auto mb-12">${gameData.description || 'Keine Beschreibung verfügbar.'}</p>
-                    
-                    <h2 class="text-4xl font-orbitron font-bold mb-8 border-t border-green-500/20 pt-12">Erinnerungen</h2>
-                    <div id="memory-gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${galleryHtml}
-                    </div>
+                    ${additionalContentHtml}
                 </div>
             `;
             loader.style.display = 'none';
