@@ -40,6 +40,10 @@
             display: block;
             height: 100%;
             transition: opacity 0.5s ease;
+            position: relative;
+        }
+         .card-link:hover {
+            z-index: 10;
         }
         .card-link .card { transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease; }
         .card-link:hover .card {
@@ -73,10 +77,17 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 1s ease-out forwards; }
         .scroll-target { opacity: 0; }
-        .collapsible-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+        .collapsible-header { 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            position: relative; /* Neu */
+            z-index: 5; /* Neu */
+        }
         .arrow { transition: transform 0.3s ease; }
         .arrow.rotate-90 { transform: rotate(90deg); }
-        .collapsible-content { transition: max-height 0.5s ease-out; overflow: hidden; }
+        .collapsible-content { transition: max-height 0.5s ease-out;}
     </style>
 </head>
 <body class="antialiased">
@@ -153,14 +164,6 @@
                             <div id="upcoming-singleplayer-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
                             <div class="text-center mt-8"><button id="load-more-upcoming-singleplayer" class="btn-cyber py-2 px-6 hidden">Mehr laden</button></div>
                             <p id="no-upcoming-singleplayer-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine Singleplayer-Spiele angekündigt.</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="collapsible-header text-3xl font-orbitron font-semibold mb-8 text-green-300 border-b-2 border-green-500/30 pb-2">Not Free <span class="arrow text-2xl">&#9654;</span></h3>
-                         <div class="collapsible-content hidden">
-                            <div id="upcoming-not-free-games-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-                            <div class="text-center mt-8"><button id="load-more-upcoming-not-free" class="btn-cyber py-2 px-6 hidden">Mehr laden</button></div>
-                            <p id="no-upcoming-not-free-games" class="text-gray-500 mt-8 text-center hidden">Momentan sind keine kostenpflichtigen Spiele angekündigt.</p>
                         </div>
                     </div>
                 </div>
@@ -275,17 +278,14 @@
             const upcomingGrids = {
                 coop: document.getElementById('upcoming-coop-games-grid'),
                 singleplayer: document.getElementById('upcoming-singleplayer-games-grid'),
-                not_free: document.getElementById('upcoming-not-free-games-grid')
             };
             const upcomingNoGamesMsgs = {
                 coop: document.getElementById('no-upcoming-coop-games'),
                 singleplayer: document.getElementById('no-upcoming-singleplayer-games'),
-                not_free: document.getElementById('no-upcoming-not-free-games')
             };
             const upcomingLoadMoreButtons = {
                 coop: document.getElementById('load-more-upcoming-coop'),
                 singleplayer: document.getElementById('load-more-upcoming-singleplayer'),
-                not_free: document.getElementById('load-more-upcoming-not-free')
             };
             
             const releasedGamesGrid = document.getElementById('released-games-grid');
@@ -305,17 +305,22 @@
                            <span>${Number(gameData.rating).toFixed(1)}</span>
                        </div>`
                     : '';
+                
+                 const costHTML = gameData.tags?.includes('not_free')
+                    ? `<div class="absolute top-2 left-2 bg-black/80 text-green-400 font-bold text-lg rounded-full w-8 h-8 flex items-center justify-center border border-green-400/50 z-10">$</div>`
+                    : '';
 
                  const cardContent = `
                     <div class="card p-6 rounded-lg text-center">
                         ${ratingHTML}
+                        ${costHTML}
                         <img src="${gameData.image || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt'}" alt="${gameData.title} Spielcover" class="w-full h-48 object-cover rounded mb-4 border-2 border-green-500/50">
                         <div class="flex flex-col flex-grow justify-between">
                              <div>
                                 <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${gameData.title || 'Spiel wird geladen...'}</h3>
                                 <p class="text-gray-400 mb-4 h-24 overflow-hidden text-ellipsis">${gameData.description || ''}</p>
                              </div>
-                             <span class="font-semibold text-green-400 hover:text-white transition-colors mt-auto" style="user-select: none">In Steam öffnen &rarr;</span>
+                             <span class="font-semibold text-green-400 hover:text-white transition-colors mt-auto cursor-default select-none">In Steam öffnen &rarr;</span>
                         </div>
                     </div>
                 `;
@@ -332,7 +337,7 @@
             });
             
             function displayGames(docs) {
-                const upcomingDocs = { coop: [], singleplayer: [], not_free: [] };
+                const upcomingDocs = { coop: [], singleplayer: [] };
                 let releasedDocs = [];
                 let playedDocs = [];
                 
@@ -346,7 +351,6 @@
                     else { 
                         if (tags.includes('coop')) upcomingDocs.coop.push(data);
                         if (tags.includes('singleplayer')) upcomingDocs.singleplayer.push(data);
-                        if (tags.includes('not_free')) upcomingDocs.not_free.push(data);
                     }
                 });
                 
