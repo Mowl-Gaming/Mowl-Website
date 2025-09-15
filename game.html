@@ -42,6 +42,9 @@
         #lightbox-image {
              box-shadow: 0 0 25px rgba(74, 222, 128, 0.5);
         }
+        .aspect-video {
+            aspect-ratio: 16 / 9;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -117,9 +120,24 @@
             renderPage(gameData);
         }
 
+        function getMedalClipId(url) {
+            try {
+                const urlObj = new URL(url);
+                const pathParts = urlObj.pathname.split('/');
+                const clipIndex = pathParts.indexOf('clips');
+                if (clipIndex !== -1 && pathParts.length > clipIndex + 1) {
+                    return pathParts[clipIndex + 1];
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
         function renderPage(gameData) {
-            let galleryHtml = '';
+            let galleryHtml = '', clipsHtml = '', commentHtml = '';
             const images = gameData.memoryImages || [];
+            const clips = gameData.medalClips || [];
 
             if (images.length > 0) {
                 images.forEach((imageData, index) => {
@@ -133,11 +151,21 @@
                 galleryHtml = '<p class="text-gray-500 md:col-span-2 lg:col-span-3 text-center">Für dieses Spiel wurden noch keine Erinnerungen hochgeladen.</p>';
             }
 
-            let additionalContentHtml = '';
-            const hasComment = gameData.comment && gameData.comment.trim() !== '';
+            if (clips.length > 0) {
+                 clips.forEach(clipUrl => {
+                    const clipId = getMedalClipId(clipUrl);
+                    if (clipId) {
+                        clipsHtml += `
+                            <div class="aspect-video rounded-lg overflow-hidden border border-green-500/20">
+                                <iframe src="https://medal.tv/clip/${clipId}/iframe" width="100%" height="100%" frameborder="0" allow="autoplay" allowfullscreen></iframe>
+                            </div>
+                        `;
+                    }
+                });
+            }
 
-            if (hasComment) {
-                 additionalContentHtml += `
+            if (gameData.comment && gameData.comment.trim() !== '') {
+                 commentHtml = `
                     <div class="border-t border-green-500/20 pt-12 mt-12">
                         <h2 class="text-4xl font-orbitron font-bold mb-8">Unser Fazit</h2>
                         <p class="text-lg text-gray-300 max-w-3xl mx-auto whitespace-pre-wrap text-left">${gameData.comment}</p>
@@ -145,22 +173,23 @@
                 `;
             }
 
-             additionalContentHtml += `
-                <div class="${hasComment ? 'border-t border-green-500/20 pt-12 mt-12' : 'border-t border-green-500/20 pt-12 mt-12'}">
-                    <h2 class="text-4xl font-orbitron font-bold mb-8">Erinnerungen</h2>
-                    <div id="memory-gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${galleryHtml}
-                    </div>
-                </div>
-            `;
-
-
             const pageHtml = `
                 <div class="max-w-5xl mx-auto">
                     <img src="${gameData.image || 'https://placehold.co/1200x600/0a0a1a/ffffff?text=Bild+fehlt'}" alt="${gameData.title}" class="w-full h-64 md:h-96 object-cover rounded-lg mb-8 border-2 border-green-500/30">
                     <h1 class="text-5xl font-orbitron font-bold mb-4 text-glow-green">${gameData.title || 'Unbekanntes Spiel'}</h1>
                     <p class="text-lg text-gray-400 max-w-3xl mx-auto mb-12">${gameData.description || 'Keine Beschreibung verfügbar.'}</p>
-                    ${additionalContentHtml}
+                    
+                    ${commentHtml}
+
+                    <div class="border-t border-green-500/20 pt-12 mt-12">
+                        <h2 class="text-4xl font-orbitron font-bold mb-8">Clips & Highlights</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">${clipsHtml || '<p class="text-gray-500 md:col-span-2 text-center">Für dieses Spiel wurden noch keine Clips hinzugefügt.</p>'}</div>
+                    </div>
+
+                    <div class="border-t border-green-500/20 pt-12 mt-12">
+                        <h2 class="text-4xl font-orbitron font-bold mb-8">Erinnerungen</h2>
+                        <div id="memory-gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">${galleryHtml}</div>
+                    </div>
                 </div>
             `;
             loader.style.display = 'none';
