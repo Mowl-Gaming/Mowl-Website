@@ -180,6 +180,18 @@
              <button id="save-comment-btn" class="btn-cyber w-full py-2">Kommentar speichern</button>
         </div>
     </div>
+    
+    <div id="clip-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[60]">
+        <div class="bg-gray-900/80 border border-green-500/50 p-8 rounded-lg shadow-lg max-w-3xl w-full mx-4 relative">
+             <button id="close-clip-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl">&times;</button>
+             <h2 id="clip-modal-title" class="text-2xl font-orbitron mb-6 text-glow-green">Clips verwalten</h2>
+             <div class="flex items-center space-x-2 mb-4">
+                 <input type="url" id="clip-url-input" class="form-input w-full p-2" placeholder="Medal.tv Clip URL...">
+                 <button id="add-clip-btn" class="btn-cyber py-2 px-4 shrink-0">Hinzufügen</button>
+             </div>
+             <div id="clip-gallery" class="space-y-2 max-h-[400px] overflow-y-auto"></div>
+        </div>
+    </div>
 
     <div id="notification-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[80]">
         <div class="bg-gray-900/80 border border-green-500/50 p-8 rounded-lg text-center shadow-lg max-w-sm w-full mx-4">
@@ -240,6 +252,12 @@
         const commentModalTitle = document.getElementById('comment-modal-title');
         const commentTextarea = document.getElementById('comment-textarea');
         const saveCommentBtn = document.getElementById('save-comment-btn');
+        const clipModal = document.getElementById('clip-modal');
+        const closeClipModalBtn = document.getElementById('close-clip-modal');
+        const clipModalTitle = document.getElementById('clip-modal-title');
+        const clipUrlInput = document.getElementById('clip-url-input');
+        const addClipBtn = document.getElementById('add-clip-btn');
+        const clipGallery = document.getElementById('clip-gallery');
         const notificationModal = document.getElementById('notification-modal');
         const notificationText = document.getElementById('notification-text');
         const notificationOkBtn = document.getElementById('notification-ok-btn');
@@ -247,6 +265,7 @@
         let onConfirmAction = () => {};
         let activeGameIdForImages = null;
         let activeGameIdForComment = null;
+        let activeGameIdForClips = null;
         let gamesData = [];
         let imageUnsubscribe = null;
         
@@ -340,7 +359,7 @@
 
                 const { tags, title, description, image } = await fetchAndParseSteamPage(gameUrl);
                 await addDoc(collection(db, "upcoming-games"), { 
-                    url: gameUrl, title, description, image, tags, status: 'upcoming', createdAt: serverTimestamp(), rating: null, comment: ""
+                    url: gameUrl, title, description, image, tags, status: 'upcoming', createdAt: serverTimestamp(), rating: null, comment: "", medalClips: []
                 });
                 steamUrlInput.value = '';
             } catch (error) {
@@ -357,13 +376,7 @@
             await updateDoc(doc(db, "upcoming-games", gameId), { status: newStatus });
         }
         
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
+        const debounce = (func, delay) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(()=>func.apply(this,a), delay)} };
 
         const handleRatingChangeDebounced = debounce(async (gameId, newRating) => {
             const ratingValue = newRating === '' ? null : parseFloat(newRating);
@@ -373,10 +386,7 @@
             }
             try {
                 await updateDoc(doc(db, "upcoming-games", gameId), { rating: ratingValue });
-            } catch (error) {
-                console.error("Rating update failed:", error);
-                showNotification("Fehler beim Speichern des Ratings.");
-            }
+            } catch (error) { showNotification("Fehler beim Speichern des Ratings."); }
         }, 500);
 
         async function handleTagChange(gameId, tag, isChecked) {
@@ -435,6 +445,7 @@
                     <td class="p-4 text-right">
                         <div class="flex justify-end items-center space-x-2">
                              <button class="comment-btn text-purple-400 hover:text-purple-300 text-sm font-semibold">Kommentar</button>
+                             <button class="clip-btn text-yellow-400 hover:text-yellow-300 text-sm font-semibold">Clips</button>
                              <button class="manage-images-btn text-blue-400 hover:text-blue-300 text-sm font-semibold">Bilder</button>
                              <button class="remove-game-btn text-red-500 hover:text-red-400 font-bold text-2xl">&times;</button>
                         </div>
@@ -447,6 +458,7 @@
                 row.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.addEventListener('change', (e) => handleTagChange(game.id, e.target.dataset.tag, e.target.checked)));
                 row.querySelector('.manage-images-btn').addEventListener('click', () => openImageManager(game.id, title));
                 row.querySelector('.comment-btn').addEventListener('click', () => openCommentEditor(game.id, title, game.comment));
+                row.querySelector('.clip-btn').addEventListener('click', () => openClipManager(game.id, title));
                 row.querySelector('.remove-game-btn').addEventListener('click', () => showConfirmation(`Spiel "${title}" wirklich löschen?`, () => deleteGame(game.id)));
             });
         }
@@ -482,6 +494,48 @@
             } catch (error) {
                 showNotification("Fehler beim Speichern des Kommentars.");
             }
+        }
+        
+        function openClipManager(gameId, gameTitle) {
+            activeGameIdForClips = gameId;
+            clipModalTitle.textContent = `Clips für "${gameTitle}"`;
+            displayClipsInModal();
+            clipModal.classList.remove('hidden');
+        }
+
+        function displayClipsInModal() {
+            const game = gamesData.find(g => g.id === activeGameIdForClips);
+            const clips = game?.medalClips || [];
+            clipGallery.innerHTML = '';
+            if (clips.length === 0) {
+                clipGallery.innerHTML = '<p class="text-gray-500 text-center">Noch keine Clips hinzugefügt.</p>';
+                return;
+            }
+            clips.forEach(clipUrl => {
+                const clipEl = document.createElement('div');
+                clipEl.className = 'flex justify-between items-center bg-gray-900/50 p-2 rounded';
+                clipEl.innerHTML = `<span class="text-sm truncate text-gray-400">${clipUrl}</span><button class="text-red-500 hover:text-red-400 font-bold px-2">&times;</button>`;
+                clipGallery.appendChild(clipEl);
+                clipEl.querySelector('button').addEventListener('click', () => showConfirmation('Diesen Clip wirklich entfernen?', () => handleClipDelete(clipUrl)));
+            });
+        }
+
+        async function handleClipAdd() {
+            const clipUrl = clipUrlInput.value.trim();
+            if (!clipUrl.includes('medal.tv')) {
+                showNotification('Bitte gib eine gültige Medal.tv URL ein.');
+                return;
+            }
+            try {
+                await updateDoc(doc(db, "upcoming-games", activeGameIdForClips), { medalClips: arrayUnion(clipUrl) });
+                clipUrlInput.value = '';
+            } catch(e) { showNotification('Fehler beim Hinzufügen des Clips.'); }
+        }
+
+        async function handleClipDelete(clipUrl) {
+            try {
+                await updateDoc(doc(db, "upcoming-games", activeGameIdForClips), { medalClips: arrayRemove(clipUrl) });
+            } catch(e) { showNotification('Fehler beim Löschen des Clips.'); }
         }
         
         function displayImagesInModal() {
@@ -597,6 +651,8 @@
             });
             closeCommentModalBtn.addEventListener('click', () => commentModal.classList.add('hidden'));
             saveCommentBtn.addEventListener('click', handleSaveComment);
+            closeClipModalBtn.addEventListener('click', () => clipModal.classList.add('hidden'));
+            addClipBtn.addEventListener('click', handleClipAdd);
             imageUploadInput.addEventListener('change', (e) => uploadFiles(e.target.files));
 
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => {e.preventDefault(); e.stopPropagation();}));
