@@ -351,12 +351,12 @@
                     }
                 },
                 {
-                    name: "CORS-Anywhere (Cloudflare)",
-                    buildUrl: (targetUrl) => `https://cors-anywhere.herokuapp.com/${targetUrl}`,
+                    name: "CORS.SH",
+                    buildUrl: (targetUrl) => `https://proxy.cors.sh/${targetUrl}`,
                      handler: async (response) => {
                         const textContent = await response.text();
-                        if (!textContent || textContent.includes("error code: 1020") || textContent.includes("Please click the button below to activate the demo server")) {
-                           throw new Error(`wurde blockiert oder benötigt Aktivierung.`);
+                         if (!textContent || textContent.includes("error code: 1020") || response.status === 403) {
+                           throw new Error(`wurde blockiert.`);
                         }
                         return textContent;
                     }
@@ -366,14 +366,17 @@
             for (let i = 0; i < proxies.length; i++) {
                 const proxy = proxies[i];
                 try {
-                    const response = await fetch(proxy.buildUrl(url), {
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' } // Some proxies require this
-                    });
+                    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+                    // Add API key for cors.sh if needed
+                    if (proxy.name === "CORS.SH") {
+                        headers['x-cors-api-key'] = 'temp_89201e5b31f74849a9301981a815a5f7';
+                    }
+                    const response = await fetch(proxy.buildUrl(url), { headers });
                     if (!response.ok) throw new Error(`antwortete mit Status ${response.status}`);
                     return await proxy.handler(response);
                 } catch (e) {
                     console.warn(`Proxy ${i + 1} (${proxy.name}) fehlgeschlagen: ${e.message}`);
-                    if (i === proxies.length - 1) { // Last proxy failed
+                    if (i === proxies.length - 1) {
                         throw new Error('Alle Proxy-Dienste sind momentan nicht erreichbar oder werden blockiert.');
                     }
                 }
