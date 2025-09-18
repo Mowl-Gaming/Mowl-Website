@@ -350,7 +350,7 @@
             }
 
             const response = await fetch(PROXY_URL(searchUrl));
-            if (!response.ok) throw new Error(`${platform} search failed.`);
+            if (!response.ok) throw new Error(`${platform}-Suche ist fehlgeschlagen.`);
             const data = await response.json();
             const content = data.contents;
             
