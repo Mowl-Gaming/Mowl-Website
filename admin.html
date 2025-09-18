@@ -337,42 +337,44 @@
             await signOut(auth);
         }
         
-        const PROXY_URL = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
         
         async function searchStore(gameName, platform) {
             let searchUrl;
             if (platform === 'steam') {
                 searchUrl = `https://store.steampowered.com/search/results?term=${encodeURIComponent(gameName)}`;
+                const response = await fetch(PROXY_URL(searchUrl));
+                if (!response.ok) throw new Error('Steam-Suche ist fehlgeschlagen.');
+                const data = await response.json();
+                const htmlText = data.contents;
+                const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+                const firstResult = doc.querySelector('a.search_result_row');
+                if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" auf Steam gefunden.`);
+                return firstResult.href;
             } else if (platform === 'epic') {
-                 searchUrl = `https://store.epicgames.com/de/browse?q=${encodeURIComponent(gameName)}`;
-            } else {
-                return null;
+                searchUrl = `https://store-content-ipv4.ak.epicgames.com/api/de/content/products/search?keywords=${encodeURIComponent(gameName)}&start=0&count=1`;
+                const response = await fetch(PROXY_URL(searchUrl));
+                if (!response.ok) throw new Error('Epic Games-Suche ist fehlgeschlagen.');
+                const data = await response.json();
+                const epicData = JSON.parse(data.contents);
+                if (!epicData.elements || epicData.elements.length === 0) {
+                     throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
+                }
+                const productSlug = epicData.elements[0].productSlug;
+                if (productSlug) {
+                    return `https://store.epicgames.com/de/p/${productSlug.replace(/\/home$/, '')}`;
+                } else {
+                    throw new Error(`Kein gültiges Spiel für "${gameName}" im Epic Games Store gefunden.`);
+                }
             }
-
-            const response = await fetch(PROXY_URL(searchUrl));
-            if (!response.ok) throw new Error(`${platform} search failed.`);
-            const htmlText = await response.text();
-            const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-
-            let firstResult;
-            if (platform === 'steam') {
-                firstResult = doc.querySelector('a.search_result_row');
-            } else if (platform === 'epic') {
-                firstResult = doc.querySelector('a[aria-label][href^="/p/"]');
-            }
-            
-            if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" auf ${platform} gefunden.`);
-            
-            if(platform === 'epic') {
-                return `https://store.epicgames.com${firstResult.getAttribute('href')}`;
-            }
-            return firstResult.href;
+            return null;
         }
 
         async function fetchAndParseStorePage(url, platform) {
             const response = await fetch(PROXY_URL(url));
             if (!response.ok) throw new Error('Store-Seite konnte nicht geladen werden.');
-            const htmlText = await response.text();
+            const data = await response.json();
+            const htmlText = data.contents;
             const doc = new DOMParser().parseFromString(htmlText, 'text/html');
 
             const tags = new Set();
