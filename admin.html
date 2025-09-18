@@ -72,6 +72,11 @@
         .modal { transition: opacity 0.3s ease, visibility 0.3s ease; }
         table tbody tr { transition: background-color 0.2s ease; }
         table tbody tr:hover { background-color: rgba(74, 222, 128, 0.05); }
+        
+        #drop-zone.drag-over {
+            border-color: #4ade80;
+            box-shadow: var(--glow-green);
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -335,23 +340,33 @@
         const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
         
         async function searchStore(gameName, platform) {
+            let searchUrl;
+            if (platform === 'steam') {
+                searchUrl = `https://store.steampowered.com/search/suggest?term=${encodeURIComponent(gameName)}&f=games&cc=DE&l=german`;
+            } else if (platform === 'epic') {
+                 searchUrl = `https://store-content-ipv4.ak.epicgames.com/api/de/content/search?sortBy=relevancy&sortDir=DESC&count=1&keywords=${encodeURIComponent(gameName)}`;
+            } else {
+                return null;
+            }
+
             const response = await fetch(PROXY_URL(searchUrl));
             if (!response.ok) throw new Error(`${platform} search failed.`);
             const data = await response.json();
             const htmlText = data.contents;
-            const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-
-            let firstResult;
+            
             if (platform === 'steam') {
-                searchUrl = `https://store.steampowered.com/search/suggest?term=${encodeURIComponent(gameName)}&f=games&cc=DE&l=german`;
-                firstResult = doc.querySelector('a.search_suggestion_row');
+                const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+                const firstResult = doc.querySelector('a.search_suggestion_row');
                 if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" auf Steam gefunden.`);
                 return firstResult.href;
             } else if (platform === 'epic') {
-                 searchUrl = `https://store.epicgames.com/de/browse?q=${encodeURIComponent(gameName)}`;
-                 firstResult = doc.querySelector('a[data-testid="search-product-card-title-link"][href^="/p/"]');
-                 if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
-                 return `https://store.epicgames.com${firstResult.getAttribute('href')}`;
+                 const epicData = JSON.parse(htmlText);
+                 const firstResult = epicData?.elements?.[0];
+                 if (!firstResult || !firstResult.productSlug) {
+                    throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
+                 }
+                 const productSlug = firstResult.productSlug.replace(/\/home$/, '');
+                 return `https://store.epicgames.com/de/p/${productSlug}`;
             }
             return null;
         }
