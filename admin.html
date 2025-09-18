@@ -72,11 +72,6 @@
         .modal { transition: opacity 0.3s ease, visibility 0.3s ease; }
         table tbody tr { transition: background-color 0.2s ease; }
         table tbody tr:hover { background-color: rgba(74, 222, 128, 0.05); }
-        
-        #drop-zone.drag-over {
-            border-color: #4ade80;
-            box-shadow: var(--glow-green);
-        }
     </style>
 </head>
 <body class="antialiased">
@@ -340,32 +335,23 @@
         const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
         
         async function searchStore(gameName, platform) {
-            let searchUrl;
+            const response = await fetch(PROXY_URL(searchUrl));
+            if (!response.ok) throw new Error(`${platform} search failed.`);
+            const data = await response.json();
+            const htmlText = data.contents;
+            const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+
+            let firstResult;
             if (platform === 'steam') {
-                searchUrl = `https://store.steampowered.com/search/results?term=${encodeURIComponent(gameName)}`;
-                const response = await fetch(PROXY_URL(searchUrl));
-                if (!response.ok) throw new Error('Steam-Suche ist fehlgeschlagen.');
-                const data = await response.json();
-                const htmlText = data.contents;
-                const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-                const firstResult = doc.querySelector('a.search_result_row');
+                searchUrl = `https://store.steampowered.com/search/suggest?term=${encodeURIComponent(gameName)}&f=games&cc=DE&l=german`;
+                firstResult = doc.querySelector('a.search_suggestion_row');
                 if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" auf Steam gefunden.`);
                 return firstResult.href;
             } else if (platform === 'epic') {
-                searchUrl = `https://store-content-ipv4.ak.epicgames.com/api/de/content/products/search?keywords=${encodeURIComponent(gameName)}&start=0&count=1`;
-                const response = await fetch(PROXY_URL(searchUrl));
-                if (!response.ok) throw new Error('Epic Games-Suche ist fehlgeschlagen.');
-                const data = await response.json();
-                const epicData = JSON.parse(data.contents);
-                if (!epicData.elements || epicData.elements.length === 0) {
-                     throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
-                }
-                const productSlug = epicData.elements[0].productSlug;
-                if (productSlug) {
-                    return `https://store.epicgames.com/de/p/${productSlug.replace(/\/home$/, '')}`;
-                } else {
-                    throw new Error(`Kein gültiges Spiel für "${gameName}" im Epic Games Store gefunden.`);
-                }
+                 searchUrl = `https://store.epicgames.com/de/browse?q=${encodeURIComponent(gameName)}`;
+                 firstResult = doc.querySelector('a[data-testid="search-product-card-title-link"][href^="/p/"]');
+                 if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
+                 return `https://store.epicgames.com${firstResult.getAttribute('href')}`;
             }
             return null;
         }
@@ -389,7 +375,7 @@
             }
 
             const rawTitle = doc.querySelector('meta[property="og:title"]')?.content || 'Unbekannter Titel';
-            const cleanedTitle = rawTitle.replace(/Sparen Sie \d+% bei /i, '').replace(/Save \d+% on /i, '').replace(/ bei Steam/i, '').replace(/ on Steam/i, '').trim();
+            const cleanedTitle = rawTitle.replace(/Sparen Sie \d+% bei /i, '').replace(/Save \d+% on /i, '').replace(/ bei Steam/i, '').replace(/ on Steam/i, '').replace(/ \| Epic Games Store/i, '').trim();
             const description = doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.';
             const image = doc.querySelector('meta[property="og:image"]')?.content || 'https://placehold.co/600x400/0a0a1a/ffffff?text=Bild+fehlt';
             return { tags: Array.from(tags), title: cleanedTitle, description, image };
