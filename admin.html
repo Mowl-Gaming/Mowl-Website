@@ -361,7 +361,7 @@
                 return firstResult.href;
 
             } else if (platform === 'epic') {
-                const searchUrl = `https://store-content-ipv4.ak.epicgames.com/api/de/content/search?sortBy=relevancy&sortDir=DESC&count=1&keywords=${encodeURIComponent(gameName)}`;
+                const searchUrl = `https://store.epicgames.com/store/api/search?locale=de&q=${encodeURIComponent(gameName)}&count=1`;
                 const response = await fetch(PROXY_URL(searchUrl));
                 
                 if (!response.ok) {
@@ -375,7 +375,8 @@
                     throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
                 }
                 
-                const productSlug = firstResult.productSlug.replace(/\/home$/, '');
+                // The productSlug can sometimes be just the name, or name/home.
+                const productSlug = firstResult.productSlug.split('/')[0];
                 return `https://store.epicgames.com/de/p/${productSlug}`;
             }
             return null;
@@ -803,6 +804,7 @@
     </script>
 </body>
 </html>
+
 
 
 
