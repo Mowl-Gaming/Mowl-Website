@@ -361,49 +361,22 @@
                 return firstResult.href;
 
             } else if (platform === 'epic') {
-                const epicApiUrl = 'https://store.epicgames.com/graphql';
-                const epicQuery = `
-                    query searchStoreQuery($country: String!, $keywords: String!, $locale: String, $count: Int) {
-                      Catalog {
-                        searchStore(country: $country, keywords: $keywords, locale: $locale, count: $count) {
-                          elements {
-                            title
-                            productSlug
-                          }
-                        }
-                      }
-                    }`;
-                    
-                const epicVariables = {
-                    keywords: gameName,
-                    country: 'DE',
-                    locale: 'de',
-                    count: 1,
-                };
-
-                const apiResponse = await fetch(PROXY_URL(epicApiUrl), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        query: epicQuery,
-                        variables: epicVariables,
-                    }),
-                });
-
-                if (!apiResponse.ok) {
-                     throw new Error(`epic-Suche ist fehlgeschlagen. Proxy-Server antwortet nicht korrekt (Status: ${apiResponse.status}).`);
+                const searchUrl = `https://store-content-ipv4.ak.epicgames.com/api/de/content/search?sortBy=relevancy&sortDir=DESC&count=1&keywords=${encodeURIComponent(gameName)}`;
+                const response = await fetch(PROXY_URL(searchUrl));
+                
+                if (!response.ok) {
+                    throw new Error(`epic-Suche ist fehlgeschlagen. Status: ${response.status}`);
                 }
                 
-                const responseData = await apiResponse.json(); 
-                const firstResult = responseData?.data?.Catalog?.searchStore?.elements?.[0];
+                const epicData = await response.json();
+                const firstResult = epicData?.elements?.[0];
 
                 if (!firstResult || !firstResult.productSlug) {
                     throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
                 }
-
+                
                 const productSlug = firstResult.productSlug.replace(/\/home$/, '');
                 return `https://store.epicgames.com/de/p/${productSlug}`;
-
             }
             return null;
         }
@@ -830,6 +803,7 @@
     </script>
 </body>
 </html>
+
 
 
 
