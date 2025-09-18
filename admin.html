@@ -243,7 +243,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // DOM Elements
         const loginSection = document.getElementById('login-section');
         const dashboardSection = document.getElementById('dashboard-section');
         const emailInput = document.getElementById('email-input');
@@ -340,14 +339,33 @@
         
         const PROXY_URL = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`;
         
-        async function searchSteamForGame(gameName) {
-            const searchUrl = `https://store.steampowered.com/search/results?term=${encodeURIComponent(gameName)}`;
+        async function searchStore(gameName, platform) {
+            let searchUrl;
+            if (platform === 'steam') {
+                searchUrl = `https://store.steampowered.com/search/results?term=${encodeURIComponent(gameName)}`;
+            } else if (platform === 'epic') {
+                 searchUrl = `https://store.epicgames.com/de/browse?q=${encodeURIComponent(gameName)}`;
+            } else {
+                return null;
+            }
+
             const response = await fetch(PROXY_URL(searchUrl));
-            if (!response.ok) throw new Error('Steam-Suche ist fehlgeschlagen.');
+            if (!response.ok) throw new Error(`${platform} search failed.`);
             const htmlText = await response.text();
             const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-            const firstResult = doc.querySelector('a.search_result_row');
-            if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" gefunden.`);
+
+            let firstResult;
+            if (platform === 'steam') {
+                firstResult = doc.querySelector('a.search_result_row');
+            } else if (platform === 'epic') {
+                firstResult = doc.querySelector('a[aria-label][href^="/p/"]');
+            }
+            
+            if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" auf ${platform} gefunden.`);
+            
+            if(platform === 'epic') {
+                return `https://store.epicgames.com${firstResult.getAttribute('href')}`;
+            }
             return firstResult.href;
         }
 
@@ -397,15 +415,10 @@
                 }
                 
                 let gameUrl = urlOrName;
-                let isSteam = platform === 'steam' && (urlOrName.startsWith('https://store.steampowered.com/app/') || !urlOrName.startsWith('http'));
-                let isEpic = platform === 'epic' && urlOrName.startsWith('https://store.epicgames.com/');
-
-                if (isSteam && !urlOrName.startsWith('http')) {
-                    gameUrl = await searchSteamForGame(urlOrName);
-                } else if (!isSteam && !isEpic) {
-                    throw new Error("Bitte wähle die korrekte Plattform oder nutze 'Andere'.");
+                if (!urlOrName.startsWith('http')) {
+                    gameUrl = await searchStore(urlOrName, platform);
                 }
-
+                
                 if (gamesData.some(game => game.url === gameUrl)) throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
 
                 const { tags, title, description, image } = await fetchAndParseStorePage(gameUrl, platform);
@@ -743,7 +756,7 @@
                 radio.addEventListener('change', (e) => {
                     const input = document.getElementById('game-input');
                     if (e.target.value === 'steam') input.placeholder = "Steam URL oder Spielname...";
-                    else if (e.target.value === 'epic') input.placeholder = "Epic Games Store URL...";
+                    else if (e.target.value === 'epic') input.placeholder = "Epic Games Store URL oder Spielname...";
                     else input.placeholder = "Spielname für manuelle Eingabe...";
                 });
             });
