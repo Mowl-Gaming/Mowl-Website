@@ -337,7 +337,7 @@
             await signOut(auth);
         }
         
-        const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const PROXY_URL = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`;
         
         /**
          * [REVISED FUNCTION]
@@ -804,3 +804,4 @@
     </script>
 </body>
 </html>
+
