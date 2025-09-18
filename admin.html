@@ -106,8 +106,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                     <div>
                         <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
+                        <div class="flex items-center space-x-4 mb-2">
+                            <label class="flex items-center space-x-2"><input type="radio" name="platform" value="steam" class="custom-checkbox" checked><span>Steam</span></label>
+                            <label class="flex items-center space-x-2"><input type="radio" name="platform" value="other" class="custom-checkbox"><span>Andere</span></label>
+                        </div>
                         <div class="flex items-center space-x-2">
-                            <input type="text" id="steam-url-input" class="form-input w-full p-3 rounded" placeholder="Steam URL oder Spielname..." autocomplete="off">
+                            <input type="text" id="game-input" class="form-input w-full p-3 rounded" placeholder="Steam URL oder Spielname..." autocomplete="off">
                             <button id="add-game-btn" class="btn-cyber py-3 px-6 font-bold flex items-center justify-center shrink-0">
                                 <span id="add-game-text">Hinzufügen</span>
                                 <div id="add-game-loader" class="loader hidden"></div>
@@ -234,7 +238,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // DOM Elements
         const loginSection = document.getElementById('login-section');
         const dashboardSection = document.getElementById('dashboard-section');
         const emailInput = document.getElementById('email-input');
@@ -242,7 +245,7 @@
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const errorMsg = document.getElementById('error-msg');
-        const steamUrlInput = document.getElementById('steam-url-input');
+        const gameInput = document.getElementById('game-input');
         const addGameBtn = document.getElementById('add-game-btn');
         const addGameText = document.getElementById('add-game-text');
         const addGameLoader = document.getElementById('add-game-loader');
@@ -365,7 +368,9 @@
         }
 
         async function handleAddGame() {
-            const urlOrName = steamUrlInput.value.trim();
+            const urlOrName = document.getElementById('game-input').value.trim();
+            const platform = document.querySelector('input[name="platform"]:checked').value;
+
             if (!urlOrName) { addGameError.textContent = 'Bitte eine URL oder einen Spielnamen eingeben.'; return; }
             
             addGameBtn.disabled = true;
@@ -374,15 +379,21 @@
             addGameError.textContent = '';
 
             try {
-                if (urlOrName.startsWith('https://store.steampowered.com/app/')) {
-                    if (gamesData.some(game => game.url === urlOrName)) throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
-                    const { tags, title, description, image } = await fetchAndParseSteamPage(urlOrName);
+                if (platform === 'steam') {
+                    let gameUrl;
+                    if (urlOrName.startsWith('https://store.steampowered.com/app/')) {
+                        gameUrl = urlOrName;
+                    } else {
+                        gameUrl = await searchSteamForGame(urlOrName);
+                    }
+                    if (gamesData.some(game => game.url === gameUrl)) throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
+
+                    const { tags, title, description, image } = await fetchAndParseSteamPage(gameUrl);
                     await addDoc(collection(db, "upcoming-games"), { 
-                        url: urlOrName, title, description, image, tags, status: 'upcoming', platform: 'steam', createdAt: serverTimestamp(), rating: null, comment: "", medalClips: []
+                        url: gameUrl, title, description, image, tags, status: 'upcoming', platform: 'steam', createdAt: serverTimestamp(), rating: null, comment: "", medalClips: []
                     });
-                    steamUrlInput.value = '';
-                } else {
-                    // Open manual entry modal
+                    document.getElementById('game-input').value = '';
+                } else { // 'other'
                     manualTitle.value = urlOrName;
                     manualDesc.value = '';
                     manualImageUrl.value = '';
@@ -399,7 +410,7 @@
                 addGameLoader.classList.add('hidden');
             }
         }
-
+        
         async function handleManualAddGame() {
             const game = {
                 title: manualTitle.value.trim(),
@@ -407,7 +418,7 @@
                 image: manualImageUrl.value.trim(),
                 url: manualGameUrl.value.trim(),
                 platform: manualPlatform.value,
-                tags: [], // Manual entry doesn't auto-detect tags for now
+                tags: [],
                 status: 'upcoming',
                 createdAt: serverTimestamp(),
                 rating: null,
@@ -421,11 +432,12 @@
             try {
                 await addDoc(collection(db, "upcoming-games"), game);
                 manualAddModal.classList.add('hidden');
-                steamUrlInput.value = '';
+                document.getElementById('game-input').value = '';
             } catch (error) {
                 showNotification("Fehler beim Speichern des Spiels.");
             }
         }
+
 
         async function handleStatusChange(gameId, newStatus) {
             await updateDoc(doc(db, "upcoming-games", gameId), { status: newStatus });
@@ -713,7 +725,17 @@
             passwordInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleLogin(); });
             logoutBtn.addEventListener('click', handleLogout);
             addGameBtn.addEventListener('click', handleAddGame);
-            steamUrlInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleAddGame(); });
+            document.querySelectorAll('input[name="platform"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const input = document.getElementById('game-input');
+                    if (e.target.value === 'steam') {
+                        input.placeholder = "Steam URL oder Spielname...";
+                    } else {
+                        input.placeholder = "Spielname für manuelle Eingabe...";
+                    }
+                });
+            });
+
             searchInput.addEventListener('input', renderGames);
 
             confirmBtn.addEventListener('click', () => { onConfirmAction(); confirmationModal.classList.add('hidden'); });
