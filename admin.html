@@ -166,12 +166,12 @@
              <button id="close-image-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl">&times;</button>
              <h2 id="image-modal-title" class="text-2xl font-orbitron mb-6 text-glow-green">Bilder verwalten</h2>
              <div id="drop-zone" class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-green-500 transition-colors mb-4">
-                <div id="drop-zone-content">
-                    <p class="text-gray-400">Bilder hierher ziehen oder</p>
-                    <label for="image-upload-input" class="text-green-400 font-semibold cursor-pointer hover:underline">Dateien auswählen</label>
-                    <p class="text-xs text-gray-500 mt-2">(Bilder werden automatisch komprimiert)</p>
-                </div>
-                <input type="file" id="image-upload-input" accept="image/*" class="hidden" multiple>
+                 <div id="drop-zone-content">
+                     <p class="text-gray-400">Bilder hierher ziehen oder</p>
+                     <label for="image-upload-input" class="text-green-400 font-semibold cursor-pointer hover:underline">Dateien auswählen</label>
+                     <p class="text-xs text-gray-500 mt-2">(Bilder werden automatisch komprimiert)</p>
+                 </div>
+                 <input type="file" id="image-upload-input" accept="image/*" class="hidden" multiple>
              </div>
              <div id="image-gallery" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-[400px] overflow-y-auto"></div>
         </div>
@@ -208,8 +208,8 @@
              <input type="url" id="manual-image-url" class="form-input w-full p-2" placeholder="URL zum Header-Bild...">
              <input type="url" id="manual-game-url" class="form-input w-full p-2" placeholder="URL zur Shop-/Download-Seite...">
              <select id="manual-platform" class="status-select w-full p-2 rounded">
-                <option value="epic">Epic Games</option>
-                <option value="other">Andere</option>
+                 <option value="epic">Epic Games</option>
+                 <option value="other">Andere</option>
              </select>
              <button id="save-manual-game-btn" class="btn-cyber w-full py-2">Spiel speichern</button>
         </div>
@@ -339,34 +339,44 @@
         
         const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
         
+        /**
+         * [REVISED FUNCTION]
+         * Searches the store by scraping the main search results page, which is more reliable
+         * than internal APIs or suggestion endpoints.
+         */
         async function searchStore(gameName, platform) {
             let searchUrl;
             if (platform === 'steam') {
-                searchUrl = `https://store.steampowered.com/search/suggest?term=${encodeURIComponent(gameName)}&f=games&cc=DE&l=german`;
+                searchUrl = `https://store.steampowered.com/search/?term=${encodeURIComponent(gameName)}&l=german&cc=de&category1=998`;
             } else if (platform === 'epic') {
-                 searchUrl = `https://store-content-ipv4.ak.epicgames.com/api/de/content/search?sortBy=relevancy&sortDir=DESC&count=1&keywords=${encodeURIComponent(gameName)}`;
+                searchUrl = `https://www.epicgames.com/store/de/search?q=${encodeURIComponent(gameName)}`;
             } else {
                 return null;
             }
 
             const response = await fetch(PROXY_URL(searchUrl));
             if (!response.ok) throw new Error(`${platform}-Suche ist fehlgeschlagen.`);
+            
             const data = await response.json();
             const content = data.contents;
+            if (!content) throw new Error(`Keine Inhalte von der ${platform}-Seite erhalten.`);
             
+            const doc = new DOMParser().parseFromString(content, 'text/html');
+
             if (platform === 'steam') {
-                const doc = new DOMParser().parseFromString(content, 'text/html');
-                const firstResult = doc.querySelector('a.search_suggestion_row');
-                if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" auf Steam gefunden.`);
+                const firstResult = doc.querySelector('#search_resultsRows > a.search_result_row');
+                if (!firstResult || !firstResult.href) {
+                    throw new Error(`Kein Spiel namens "${gameName}" auf Steam gefunden.`);
+                }
                 return firstResult.href;
             } else if (platform === 'epic') {
-                 const epicData = JSON.parse(content);
-                 const firstResult = epicData?.elements?.[0];
-                 if (!firstResult || !firstResult.productSlug) {
+                const firstResult = doc.querySelector('[data-testid="search-results-list"] a[href*="/p/"]');
+                if (!firstResult || !firstResult.href) {
                     throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
-                 }
-                 const productSlug = firstResult.productSlug.replace(/\/home$/, '');
-                 return `https://store.epicgames.com/de/p/${productSlug}`;
+                }
+                
+                const href = firstResult.getAttribute('href');
+                return href.startsWith('http') ? href : `https://www.epicgames.com${href}`;
             }
             return null;
         }
@@ -564,6 +574,10 @@
                 gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 gamesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
                 renderGames();
+                // If the clip modal is open, refresh its content as it depends on gamesData
+                if (activeGameIdForClips && !clipModal.classList.contains('hidden')) {
+                    displayClipsInModal();
+                }
             });
         }
         
@@ -717,9 +731,9 @@
             
             const imagePromises = Array.from(files).map(file => {
                  if (!file.type.startsWith('image/')) {
-                    showNotification(`"${file.name}" ist keine gültige Bilddatei.`);
-                    return Promise.resolve(null);
-                }
+                     showNotification(`"${file.name}" ist keine gültige Bilddatei.`);
+                     return Promise.resolve(null);
+                 }
                 return compressImage(file).catch(err => {
                     console.error(`Komprimierungsfehler für ${file.name}:`, err);
                     showNotification(`Bild "${file.name}" konnte nicht verarbeitet werden.`);
@@ -786,20 +800,7 @@
             ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.add('drag-over')));
             ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.remove('drag-over')));
             dropZone.addEventListener('drop', e => uploadFiles(e.dataTransfer.files));
-            
-            onSnapshot(query(collection(db, "upcoming-games")), (snapshot) => {
-                gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                gamesData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-                renderGames();
-                if (activeGameIdForClips && !clipModal.classList.contains('hidden')) {
-                    displayClipsInModal();
-                }
-                 if (activeGameIdForImages && !imageModal.classList.contains('hidden')) {
-                    displayImagesInModal();
-                }
-            });
         });
     </script>
 </body>
 </html>
-
