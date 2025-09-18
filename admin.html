@@ -337,7 +337,7 @@
             await signOut(auth);
         }
         
-        const PROXY_URL = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
         
         /**
          * [REVISED FUNCTION]
@@ -350,9 +350,10 @@
                 const response = await fetch(PROXY_URL(searchUrl));
                 if (!response.ok) throw new Error(`Steam-Suche ist fehlgeschlagen.`);
                 
-                const content = await response.text();
-                if (!content) throw new Error(`Keine Inhalte von der Steam-Seite erhalten.`);
-                
+                const data = await response.json();
+                if (!data.contents) throw new Error(`Keine Inhalte von der Steam-Seite erhalten.`);
+                const content = data.contents;
+
                 const doc = new DOMParser().parseFromString(content, 'text/html');
                 const firstResult = doc.querySelector('#search_resultsRows > a.search_result_row');
                 if (!firstResult || !firstResult.href) {
@@ -368,7 +369,9 @@
                     throw new Error(`epic-Suche ist fehlgeschlagen. Status: ${response.status}`);
                 }
                 
-                const epicData = await response.json();
+                const data = await response.json();
+                if (!data.contents) throw new Error(`Keine Inhalte von der Epic-Seite erhalten.`);
+                const epicData = JSON.parse(data.contents);
                 const firstResult = epicData?.elements?.[0];
 
                 if (!firstResult || !firstResult.productSlug) {
@@ -385,7 +388,10 @@
         async function fetchAndParseStorePage(url, platform) {
             const response = await fetch(PROXY_URL(url));
             if (!response.ok) throw new Error('Store-Seite konnte nicht geladen werden.');
-            const htmlText = await response.text();
+            
+            const data = await response.json();
+            if (!data.contents) throw new Error('Proxy-Antwort ist leer.');
+            const htmlText = data.contents;
             const doc = new DOMParser().parseFromString(htmlText, 'text/html');
 
             const tags = new Set();
