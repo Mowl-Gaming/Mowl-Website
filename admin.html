@@ -337,7 +337,7 @@
             await signOut(auth);
         }
         
-        const PROXY_URL = (url) => `https://thingproxy.freeboard.io/fetch/${url}`;
+        const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
         
         async function searchStore(gameName, platform) {
             let searchUrl;
@@ -357,8 +357,8 @@
                 throw new Error(`Proxy-Server-Fehler (Status: ${response.status})`);
             }
             
-            // The new proxy returns raw text, not JSON
-            const content = await response.text();
+            const data = await response.json();
+            const content = data.contents;
             if (!content) {
                 throw new Error("Proxy hat keine Daten von der Store-Seite zurückgegeben.");
             }
@@ -406,8 +406,8 @@
             const response = await fetch(PROXY_URL(url));
             if (!response.ok) throw new Error('Store-Seite konnte nicht geladen werden.');
             
-            // The new proxy returns raw text, not JSON
-            const htmlText = await response.text();
+            const data = await response.json();
+            const htmlText = data.contents;
             if (!htmlText) throw new Error('Proxy-Antwort ist leer.');
 
             const doc = new DOMParser().parseFromString(htmlText, 'text/html');
