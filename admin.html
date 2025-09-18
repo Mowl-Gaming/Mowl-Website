@@ -357,8 +357,7 @@
             const response = await fetch(PROXY_URL(searchUrl));
             if (!response.ok) throw new Error(`${platform}-Suche ist fehlgeschlagen.`);
             
-            const data = await response.json();
-            const content = data.contents;
+            const content = await response.text();
             if (!content) throw new Error(`Keine Inhalte von der ${platform}-Seite erhalten.`);
             
             const doc = new DOMParser().parseFromString(content, 'text/html');
@@ -384,8 +383,7 @@
         async function fetchAndParseStorePage(url, platform) {
             const response = await fetch(PROXY_URL(url));
             if (!response.ok) throw new Error('Store-Seite konnte nicht geladen werden.');
-            const data = await response.json();
-            const htmlText = data.contents;
+            const htmlText = await response.text();
             const doc = new DOMParser().parseFromString(htmlText, 'text/html');
 
             const tags = new Set();
@@ -804,4 +802,5 @@
     </script>
 </body>
 </html>
+
 
