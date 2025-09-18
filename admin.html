@@ -352,15 +352,15 @@
             const response = await fetch(PROXY_URL(searchUrl));
             if (!response.ok) throw new Error(`${platform} search failed.`);
             const data = await response.json();
-            const htmlText = data.contents;
+            const content = data.contents;
             
             if (platform === 'steam') {
-                const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+                const doc = new DOMParser().parseFromString(content, 'text/html');
                 const firstResult = doc.querySelector('a.search_suggestion_row');
                 if (!firstResult) throw new Error(`Kein Spiel namens "${gameName}" auf Steam gefunden.`);
                 return firstResult.href;
             } else if (platform === 'epic') {
-                 const epicData = JSON.parse(htmlText);
+                 const epicData = JSON.parse(content);
                  const firstResult = epicData?.elements?.[0];
                  if (!firstResult || !firstResult.productSlug) {
                     throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
