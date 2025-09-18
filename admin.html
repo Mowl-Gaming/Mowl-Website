@@ -72,6 +72,11 @@
         .modal { transition: opacity 0.3s ease, visibility 0.3s ease; }
         table tbody tr { transition: background-color 0.2s ease; }
         table tbody tr:hover { background-color: rgba(74, 222, 128, 0.05); }
+        
+        #drop-zone.drag-over {
+            border-color: #4ade80;
+            box-shadow: var(--glow-green);
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -107,8 +112,9 @@
                     <div>
                         <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
                         <div class="flex items-center space-x-4 mb-2">
-                            <label class="flex items-center space-x-2"><input type="radio" name="platform" value="steam" class="custom-checkbox" checked><span>Steam</span></label>
-                            <label class="flex items-center space-x-2"><input type="radio" name="platform" value="other" class="custom-checkbox"><span>Andere</span></label>
+                             <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="platform-select" value="steam" class="custom-checkbox" checked><span>Steam</span></label>
+                             <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="platform-select" value="epic" class="custom-checkbox"><span>Epic Games</span></label>
+                             <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="platform-select" value="other" class="custom-checkbox"><span>Andere</span></label>
                         </div>
                         <div class="flex items-center space-x-2">
                             <input type="text" id="game-input" class="form-input w-full p-3 rounded" placeholder="Steam URL oder Spielname..." autocomplete="off">
@@ -202,7 +208,6 @@
              <input type="url" id="manual-image-url" class="form-input w-full p-2" placeholder="URL zum Header-Bild...">
              <input type="url" id="manual-game-url" class="form-input w-full p-2" placeholder="URL zur Shop-/Download-Seite...">
              <select id="manual-platform" class="status-select w-full p-2 rounded">
-                <option value="steam">Steam</option>
                 <option value="epic">Epic Games</option>
                 <option value="other">Andere</option>
              </select>
@@ -238,6 +243,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
+        // DOM Elements
         const loginSection = document.getElementById('login-section');
         const dashboardSection = document.getElementById('dashboard-section');
         const emailInput = document.getElementById('email-input');
@@ -345,21 +351,23 @@
             return firstResult.href;
         }
 
-        async function fetchAndParseSteamPage(steamUrl) {
-            const response = await fetch(PROXY_URL(steamUrl));
-            if (!response.ok) throw new Error('Steam-Seite konnte nicht geladen werden.');
+        async function fetchAndParseStorePage(url, platform) {
+            const response = await fetch(PROXY_URL(url));
+            if (!response.ok) throw new Error('Store-Seite konnte nicht geladen werden.');
             const htmlText = await response.text();
             const doc = new DOMParser().parseFromString(htmlText, 'text/html');
 
             const tags = new Set();
-            doc.querySelectorAll('.app_tag').forEach(tagEl => {
-                const tag = tagEl.textContent.trim().toLowerCase();
-                if (['co-op', 'multiplayer', 'mehrspieler', 'ko-op', 'online co-op', 'lan co-op'].some(t => tag.includes(t))) tags.add('coop');
-                if (['single-player', 'einzelspieler'].some(t => tag.includes(t))) tags.add('singleplayer');
-            });
-            
-            const price = doc.querySelector('.game_purchase_price, .discount_final_price');
-            if (price && !price.textContent.toLowerCase().includes('free') && !price.textContent.toLowerCase().includes('kostenlos')) tags.add('not_free');
+            if(platform === 'steam') {
+                doc.querySelectorAll('.app_tag').forEach(tagEl => {
+                    const tag = tagEl.textContent.trim().toLowerCase();
+                    if (['co-op', 'multiplayer', 'mehrspieler', 'ko-op', 'online co-op', 'lan co-op'].some(t => tag.includes(t))) tags.add('coop');
+                    if (['single-player', 'einzelspieler'].some(t => tag.includes(t))) tags.add('singleplayer');
+                });
+                const price = doc.querySelector('.game_purchase_price, .discount_final_price');
+                if (price && !price.textContent.toLowerCase().includes('free') && !price.textContent.toLowerCase().includes('kostenlos')) tags.add('not_free');
+            }
+
             const rawTitle = doc.querySelector('meta[property="og:title"]')?.content || 'Unbekannter Titel';
             const cleanedTitle = rawTitle.replace(/Sparen Sie \d+% bei /i, '').replace(/Save \d+% on /i, '').replace(/ bei Steam/i, '').replace(/ on Steam/i, '').trim();
             const description = doc.querySelector('meta[property="og:description"]')?.content || 'Keine Beschreibung verfügbar.';
@@ -368,39 +376,44 @@
         }
 
         async function handleAddGame() {
-            const urlOrName = document.getElementById('game-input').value.trim();
-            const platform = document.querySelector('input[name="platform"]:checked').value;
-
+            const urlOrName = gameInput.value.trim();
+            const platform = document.querySelector('input[name="platform-select"]:checked').value;
             if (!urlOrName) { addGameError.textContent = 'Bitte eine URL oder einen Spielnamen eingeben.'; return; }
             
             addGameBtn.disabled = true;
             addGameText.classList.add('hidden');
             addGameLoader.classList.remove('hidden');
             addGameError.textContent = '';
-
+            
             try {
-                if (platform === 'steam') {
-                    let gameUrl;
-                    if (urlOrName.startsWith('https://store.steampowered.com/app/')) {
-                        gameUrl = urlOrName;
-                    } else {
-                        gameUrl = await searchSteamForGame(urlOrName);
-                    }
-                    if (gamesData.some(game => game.url === gameUrl)) throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
-
-                    const { tags, title, description, image } = await fetchAndParseSteamPage(gameUrl);
-                    await addDoc(collection(db, "upcoming-games"), { 
-                        url: gameUrl, title, description, image, tags, status: 'upcoming', platform: 'steam', createdAt: serverTimestamp(), rating: null, comment: "", medalClips: []
-                    });
-                    document.getElementById('game-input').value = '';
-                } else { // 'other'
+                if (platform === 'other') {
                     manualTitle.value = urlOrName;
                     manualDesc.value = '';
                     manualImageUrl.value = '';
                     manualGameUrl.value = '';
                     manualPlatform.value = 'other';
                     manualAddModal.classList.remove('hidden');
+                    return;
                 }
+                
+                let gameUrl = urlOrName;
+                let isSteam = platform === 'steam' && (urlOrName.startsWith('https://store.steampowered.com/app/') || !urlOrName.startsWith('http'));
+                let isEpic = platform === 'epic' && urlOrName.startsWith('https://store.epicgames.com/');
+
+                if (isSteam && !urlOrName.startsWith('http')) {
+                    gameUrl = await searchSteamForGame(urlOrName);
+                } else if (!isSteam && !isEpic) {
+                    throw new Error("Bitte wähle die korrekte Plattform oder nutze 'Andere'.");
+                }
+
+                if (gamesData.some(game => game.url === gameUrl)) throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
+
+                const { tags, title, description, image } = await fetchAndParseStorePage(gameUrl, platform);
+                await addDoc(collection(db, "upcoming-games"), { 
+                    url: gameUrl, title, description, image, tags, status: 'upcoming', platform, createdAt: serverTimestamp(), rating: null, comment: "", medalClips: []
+                });
+                gameInput.value = '';
+
             } catch (error) {
                 console.error("Error adding game:", error);
                 addGameError.textContent = error.message;
@@ -432,7 +445,7 @@
             try {
                 await addDoc(collection(db, "upcoming-games"), game);
                 manualAddModal.classList.add('hidden');
-                document.getElementById('game-input').value = '';
+                gameInput.value = '';
             } catch (error) {
                 showNotification("Fehler beim Speichern des Spiels.");
             }
@@ -725,14 +738,13 @@
             passwordInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleLogin(); });
             logoutBtn.addEventListener('click', handleLogout);
             addGameBtn.addEventListener('click', handleAddGame);
-            document.querySelectorAll('input[name="platform"]').forEach(radio => {
+            
+            document.querySelectorAll('input[name="platform-select"]').forEach(radio => {
                 radio.addEventListener('change', (e) => {
                     const input = document.getElementById('game-input');
-                    if (e.target.value === 'steam') {
-                        input.placeholder = "Steam URL oder Spielname...";
-                    } else {
-                        input.placeholder = "Spielname für manuelle Eingabe...";
-                    }
+                    if (e.target.value === 'steam') input.placeholder = "Steam URL oder Spielname...";
+                    else if (e.target.value === 'epic') input.placeholder = "Epic Games Store URL...";
+                    else input.placeholder = "Spielname für manuelle Eingabe...";
                 });
             });
 
