@@ -339,32 +339,42 @@
         
         async function fetchViaProxy(url) {
             const proxies = [
-                `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-                `https://corsproxy.io/?${encodeURIComponent(url)}`
+                {
+                    name: "AllOrigins",
+                    buildUrl: (targetUrl) => `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+                    handler: async (response) => {
+                        const data = await response.json();
+                        if (!data.contents || data.contents.includes("error code: 1020")) {
+                           throw new Error(`wurde blockiert.`);
+                        }
+                        return data.contents;
+                    }
+                },
+                {
+                    name: "CORS-Anywhere (Cloudflare)",
+                    buildUrl: (targetUrl) => `https://cors-anywhere.herokuapp.com/${targetUrl}`,
+                     handler: async (response) => {
+                        const textContent = await response.text();
+                        if (!textContent || textContent.includes("error code: 1020") || textContent.includes("Please click the button below to activate the demo server")) {
+                           throw new Error(`wurde blockiert oder benötigt Aktivierung.`);
+                        }
+                        return textContent;
+                    }
+                }
             ];
 
             for (let i = 0; i < proxies.length; i++) {
+                const proxy = proxies[i];
                 try {
-                    const response = await fetch(proxies[i]);
-                    if (!response.ok) throw new Error(`Status: ${response.status}`);
-                    
-                    if (i === 0) { // allorigins
-                        const data = await response.json();
-                        if (!data.contents || data.contents.includes("error code: 1020")) {
-                           throw new Error(`Proxy ${i + 1} wurde blockiert.`);
-                        }
-                        return { content: data.contents, isJson: true };
-                    } else { // corsproxy.io
-                        const textContent = await response.text();
-                         if (!textContent || textContent.includes("error code: 1020")) {
-                           throw new Error(`Proxy ${i + 1} wurde blockiert.`);
-                        }
-                        return { content: textContent, isJson: false };
-                    }
+                    const response = await fetch(proxy.buildUrl(url), {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' } // Some proxies require this
+                    });
+                    if (!response.ok) throw new Error(`antwortete mit Status ${response.status}`);
+                    return await proxy.handler(response);
                 } catch (e) {
-                    console.warn(`Proxy ${i + 1} fehlgeschlagen: ${e.message}`);
+                    console.warn(`Proxy ${i + 1} (${proxy.name}) fehlgeschlagen: ${e.message}`);
                     if (i === proxies.length - 1) { // Last proxy failed
-                        throw new Error('Alle Proxy-Dienste sind momentan nicht erreichbar.');
+                        throw new Error('Alle Proxy-Dienste sind momentan nicht erreichbar oder werden blockiert.');
                     }
                 }
             }
@@ -373,7 +383,7 @@
         async function searchStore(gameName, platform) {
             if (platform === 'steam') {
                 const searchUrl = `https://store.steampowered.com/search/suggest?term=${encodeURIComponent(gameName)}&f=games&cc=DE&l=german`;
-                const { content } = await fetchViaProxy(searchUrl);
+                const content = await fetchViaProxy(searchUrl);
                 
                 const doc = new DOMParser().parseFromString(content, 'text/html');
                 const firstResult = doc.querySelector('a.search_suggestion_row');
@@ -387,7 +397,7 @@
             
             if (platform === 'epic') {
                 const searchUrl = `https://store.epicgames.com/store/api/search?locale=de&q=${encodeURIComponent(gameName)}&count=1`;
-                const { content } = await fetchViaProxy(searchUrl);
+                const content = await fetchViaProxy(searchUrl);
 
                 let epicData;
                 try {
@@ -409,7 +419,7 @@
         }
 
         async function fetchAndParseStorePage(url, platform) {
-            const { content: htmlText } = await fetchViaProxy(url);
+            const htmlText = await fetchViaProxy(url);
             if (!htmlText) throw new Error('Proxy-Antwort für die Store-Seite ist leer.');
 
             const doc = new DOMParser().parseFromString(htmlText, 'text/html');
