@@ -337,7 +337,7 @@
             await signOut(auth);
         }
         
-        async function fetchViaProxy(url) {
+       async function fetchViaProxy(url) {
             const proxies = [
                 {
                     name: "AllOrigins",
@@ -352,7 +352,7 @@
                 },
                 {
                     name: "CORS.SH",
-                    buildUrl: (targetUrl) => `https://proxy.cors.sh/${targetUrl}`,
+                    buildUrl: (targetUrl) => `https://proxy.cors.sh/${targetUrl.replace(/^https?:\/\//, '')}`,
                      handler: async (response) => {
                         const textContent = await response.text();
                          if (!textContent || textContent.includes("error code: 1020") || response.status === 403) {
@@ -367,9 +367,8 @@
                 const proxy = proxies[i];
                 try {
                     const headers = { 'X-Requested-With': 'XMLHttpRequest' };
-                    // Add API key for cors.sh if needed
                     if (proxy.name === "CORS.SH") {
-                        headers['x-cors-api-key'] = 'temp_89201e5b31f74849a9301981a815a5f7';
+                         headers['x-cors-api-key'] = 'temp_89201e5b31f74849a9301981a815a5f7';
                     }
                     const response = await fetch(proxy.buildUrl(url), { headers });
                     if (!response.ok) throw new Error(`antwortete mit Status ${response.status}`);
