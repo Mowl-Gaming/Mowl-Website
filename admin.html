@@ -339,11 +339,6 @@
         
         const PROXY_URL = (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
         
-        /**
-         * [REVISED FUNCTION]
-         * Searches the store by scraping the main search results page, which is more reliable
-         * than internal APIs or suggestion endpoints.
-         */
         async function searchStore(gameName, platform) {
             if (platform === 'steam') {
                 const searchUrl = `https://store.steampowered.com/search/?term=${encodeURIComponent(gameName)}&l=german&cc=de&category1=998`;
@@ -362,7 +357,7 @@
                 return firstResult.href;
 
             } else if (platform === 'epic') {
-                const searchUrl = `https://store.epicgames.com/store/api/search?locale=de&q=${encodeURIComponent(gameName)}&count=1`;
+                const searchUrl = `https://www.epicgames.com/store/de/search?q=${encodeURIComponent(gameName)}&count=1`;
                 const response = await fetch(PROXY_URL(searchUrl));
                 
                 if (!response.ok) {
@@ -371,14 +366,28 @@
                 
                 const data = await response.json();
                 if (!data.contents) throw new Error(`Keine Inhalte von der Epic-Seite erhalten.`);
-                const epicData = JSON.parse(data.contents);
-                const firstResult = epicData?.elements?.[0];
+                const content = data.contents;
+
+                const doc = new DOMParser().parseFromString(content, 'text/html');
+                const nextDataScript = doc.querySelector('script#__NEXT_DATA__');
+
+                if (!nextDataScript) {
+                    throw new Error("Epic Games-Seite konnte nicht analysiert werden. (NEXT_DATA not found)");
+                }
+                
+                let epicData;
+                try {
+                    epicData = JSON.parse(nextDataScript.textContent);
+                } catch(e) {
+                     throw new Error("Fehler beim Verarbeiten der Epic Games-Daten.");
+                }
+
+                const firstResult = epicData?.props?.pageProps?.page?.search?.search?.elements?.[0];
 
                 if (!firstResult || !firstResult.productSlug) {
                     throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
                 }
                 
-                // The productSlug can sometimes be just the name, or name/home.
                 const productSlug = firstResult.productSlug.split('/')[0];
                 return `https://store.epicgames.com/de/p/${productSlug}`;
             }
