@@ -345,37 +345,65 @@
          * than internal APIs or suggestion endpoints.
          */
         async function searchStore(gameName, platform) {
-            let searchUrl;
             if (platform === 'steam') {
-                searchUrl = `https://store.steampowered.com/search/?term=${encodeURIComponent(gameName)}&l=german&cc=de&category1=998`;
-            } else if (platform === 'epic') {
-                searchUrl = `https://www.epicgames.com/store/de/search?q=${encodeURIComponent(gameName)}`;
-            } else {
-                return null;
-            }
-
-            const response = await fetch(PROXY_URL(searchUrl));
-            if (!response.ok) throw new Error(`${platform}-Suche ist fehlgeschlagen.`);
-            
-            const content = await response.text();
-            if (!content) throw new Error(`Keine Inhalte von der ${platform}-Seite erhalten.`);
-            
-            const doc = new DOMParser().parseFromString(content, 'text/html');
-
-            if (platform === 'steam') {
+                const searchUrl = `https://store.steampowered.com/search/?term=${encodeURIComponent(gameName)}&l=german&cc=de&category1=998`;
+                const response = await fetch(PROXY_URL(searchUrl));
+                if (!response.ok) throw new Error(`Steam-Suche ist fehlgeschlagen.`);
+                
+                const content = await response.text();
+                if (!content) throw new Error(`Keine Inhalte von der Steam-Seite erhalten.`);
+                
+                const doc = new DOMParser().parseFromString(content, 'text/html');
                 const firstResult = doc.querySelector('#search_resultsRows > a.search_result_row');
                 if (!firstResult || !firstResult.href) {
                     throw new Error(`Kein Spiel namens "${gameName}" auf Steam gefunden.`);
                 }
                 return firstResult.href;
+
             } else if (platform === 'epic') {
-                const firstResult = doc.querySelector('[data-testid="search-results-list"] a[href*="/p/"]');
-                if (!firstResult || !firstResult.href) {
-                    throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
+                const epicApiUrl = 'https://store.epicgames.com/graphql';
+                const epicQuery = `
+                    query searchStoreQuery($country: String!, $keywords: String!, $locale: String, $count: Int) {
+                      Catalog {
+                        searchStore(country: $country, keywords: $keywords, locale: $locale, count: $count) {
+                          elements {
+                            title
+                            productSlug
+                          }
+                        }
+                      }
+                    }`;
+                    
+                const epicVariables = {
+                    keywords: gameName,
+                    country: 'DE',
+                    locale: 'de',
+                    count: 1,
+                };
+
+                const apiResponse = await fetch(PROXY_URL(epicApiUrl), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: epicQuery,
+                        variables: epicVariables,
+                    }),
+                });
+
+                if (!apiResponse.ok) {
+                     throw new Error(`epic-Suche ist fehlgeschlagen. Proxy-Server antwortet nicht korrekt (Status: ${apiResponse.status}).`);
                 }
                 
-                const href = firstResult.getAttribute('href');
-                return href.startsWith('http') ? href : `https://www.epicgames.com${href}`;
+                const responseData = await apiResponse.json(); 
+                const firstResult = responseData?.data?.Catalog?.searchStore?.elements?.[0];
+
+                if (!firstResult || !firstResult.productSlug) {
+                    throw new Error(`Kein Spiel namens "${gameName}" im Epic Games Store gefunden.`);
+                }
+
+                const productSlug = firstResult.productSlug.replace(/\/home$/, '');
+                return `https://store.epicgames.com/de/p/${productSlug}`;
+
             }
             return null;
         }
@@ -802,5 +830,6 @@
     </script>
 </body>
 </html>
+
 
 
