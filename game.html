@@ -75,7 +75,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, doc, getDoc, collection, query, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-      
+        
         const firebaseConfig = {
             apiKey: "AIzaSyB8nVhql9M0IkbyQbmF7AVGvk4mKMObg0A",
             authDomain: "mowl-website.firebaseapp.com",
@@ -85,7 +85,7 @@
             appId: "1:181578753317:web:f44567dd561d8e7a37a6cc",
             measurementId: "G-9F6YC5NLCS"
         };
-      
+        
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
@@ -122,13 +122,9 @@
 
         function getMedalClipId(url) {
             try {
-                const urlObj = new URL(url);
-                const pathParts = urlObj.pathname.split('/');
-                const clipIndex = pathParts.indexOf('clips');
-                if (clipIndex !== -1 && pathParts.length > clipIndex + 1) {
-                    return pathParts[clipIndex + 1];
-                }
-                return null;
+                const regex = /medal\.tv\/(?:[a-z]{2}\/)?(?:games\/[^\/]+\/)?clips\/([^\/\?]+)/;
+                const match = url.match(regex);
+                return match ? match[1] : null;
             } catch (e) {
                 return null;
             }
@@ -152,12 +148,15 @@
             }
 
             if (clips.length > 0) {
-                 clips.forEach(clipUrl => {
-                    const clipId = getMedalClipId(clipUrl);
+                 clips.forEach(clip => { // 'clip' is an object {name, url}
+                    const clipId = getMedalClipId(clip.url); // Pass the URL string
                     if (clipId) {
                         clipsHtml += `
-                            <div class="aspect-video rounded-lg overflow-hidden border border-green-500/20">
-                                <iframe src="https://medal.tv/clip/${clipId}/iframe" width="100%" height="100%" frameborder="0" allow="autoplay" allowfullscreen></iframe>
+                            <div class="text-left">
+                                <p class="text-lg font-semibold mb-2">${clip.name}</p>
+                                <div class="aspect-video rounded-lg overflow-hidden border border-green-500/20">
+                                    <iframe src="https://medal.tv/clip/${clipId}/iframe" width="100%" height="100%" frameborder="0" allow="autoplay" allowfullscreen></iframe>
+                                </div>
                             </div>
                         `;
                     }
@@ -183,7 +182,7 @@
 
                     <div class="border-t border-green-500/20 pt-12 mt-12">
                         <h2 class="text-4xl font-orbitron font-bold mb-8">Clips & Highlights</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">${clipsHtml || '<p class="text-gray-500 md:col-span-2 text-center">Für dieses Spiel wurden noch keine Clips hinzugefügt.</p>'}</div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">${clipsHtml || '<p class="text-gray-500 md:col-span-2 text-center">Für dieses Spiel wurden noch keine Clips hinzugefügt.</p>'}</div>
                     </div>
 
                     <div class="border-t border-green-500/20 pt-12 mt-12">
