@@ -207,7 +207,7 @@
         </div>
     </div>
     
-    <!-- Redesigned Image Modal (Blue) -->
+    <!-- Image Modal (Blue) -->
     <div id="image-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[60]">
         <div class="bg-gray-900/95 border border-blue-500/30 p-0 rounded-xl shadow-2xl max-w-3xl w-full mx-4 relative overflow-hidden flex flex-col h-[600px]">
              <!-- Header -->
@@ -237,7 +237,7 @@
         </div>
     </div>
 
-    <!-- Redesigned Comment Modal (Purple) -->
+    <!-- Comment Modal (Purple) -->
     <div id="comment-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[60]">
         <div class="bg-gray-900/95 border border-purple-500/30 p-0 rounded-xl shadow-2xl max-w-3xl w-full mx-4 relative overflow-hidden flex flex-col h-[600px]">
              <!-- Header -->
@@ -256,7 +256,7 @@
         </div>
     </div>
     
-    <!-- Redesigned Clip Modal (Yellow) -->
+    <!-- Clip Modal (Yellow) -->
     <div id="clip-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[60]">
         <div class="bg-gray-900/95 border border-yellow-500/30 p-0 rounded-xl shadow-2xl max-w-3xl w-full mx-4 relative overflow-hidden flex flex-col h-[600px]">
              <!-- Header -->
@@ -586,6 +586,47 @@
         }
 
         async function fetchAndParseStorePage(url) {
+            // If it's a Steam URL, try to use the API first to be more robust
+            const steamMatch = url.match(/store\.steampowered\.com\/app\/(\d+)/);
+            if (steamMatch && steamMatch[1]) {
+                const appId = steamMatch[1];
+                const apiUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}&cc=de&l=german`;
+                
+                try {
+                    const apiResponseText = await fetchViaProxy(apiUrl);
+                    const apiResponse = JSON.parse(apiResponseText);
+                    
+                    if (apiResponse && apiResponse[appId] && apiResponse[appId].success) {
+                        const data = apiResponse[appId].data;
+                        const tags = new Set();
+                        
+                        // Parse categories from API
+                        if (data.categories) {
+                            data.categories.forEach(cat => {
+                                const desc = cat.description.toLowerCase();
+                                if (desc.includes('multiplayer') || desc.includes('mehrspieler') || desc.includes('co-op') || desc.includes('ko-op')) tags.add('coop');
+                                if (desc.includes('single-player') || desc.includes('einzelspieler')) tags.add('singleplayer');
+                            });
+                        }
+                        
+                        // Check pricing
+                        if (data.is_free === false) {
+                            tags.add('not_free');
+                        }
+                        
+                        return {
+                            tags: Array.from(tags),
+                            title: data.name,
+                            description: data.short_description,
+                            image: data.header_image
+                        };
+                    }
+                } catch (e) {
+                    console.warn("Steam API fetch failed, falling back to HTML scraping", e);
+                }
+            }
+
+            // Fallback: HTML Scraping (for non-Steam or if API fails)
             const htmlText = await fetchViaProxy(url);
             if (!htmlText) throw new Error('Leere Antwort vom Server.');
 
@@ -614,7 +655,7 @@
             if (priceEl && !priceEl.textContent.toLowerCase().includes('free') && !priceEl.textContent.toLowerCase().includes('kostenlos')) {
                 tags.add('not_free');
             }
-            rawTitle = rawTitle.replace(/Sparen Sie \d+% bei /i, '').replace(/Save \d+% on /i, '').replace(/ bei Steam/i, '').replace(/ on Steam/i, '').trim();
+            rawTitle = rawTitle.replace(/Sparen Sie \d+% bei /i, '').replace(/Save \d+% on /i, '').replace(/ bei Steam/i, '').replace(/ on Steam/i, '').replace(/ \| Epic Games Store/i, '').trim();
             
             return { tags: Array.from(tags), title: rawTitle, description, image };
         }
