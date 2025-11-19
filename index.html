@@ -251,7 +251,6 @@
       
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        // Added orderBy here for default sorting
         const gamesCollection = query(collection(db, "upcoming-games"), orderBy("createdAt", "desc"));
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -300,7 +299,6 @@
             const noPlayedGamesMsg = document.getElementById('no-played-games');
             
             function createGameCard(gameData, gameId, isClickable = false, isHidden = false) {
-                 const destinationUrl = gameData.url || '#';
                  const hiddenClass = isHidden ? 'hidden' : '';
                  
                  const ratingHTML = (gameData.rating != null && gameData.status !== 'upcoming')
@@ -314,6 +312,17 @@
                     ? `<div class="absolute top-2 left-2 bg-black/80 text-green-400 font-bold text-lg rounded-full w-8 h-8 flex items-center justify-center border border-green-400/50 z-10">$</div>`
                     : '';
 
+                 // Logic for upcoming vs released games
+                 let linkUrl = `game.html?id=${gameId}`;
+                 let linkText = "Details & Clips &rarr;";
+                 let targetAttr = "";
+
+                 if (gameData.status === 'upcoming') {
+                    linkUrl = gameData.url || '#';
+                    linkText = "In Steam öffnen &rarr;";
+                    targetAttr = 'target="_blank" rel="noopener noreferrer"';
+                 }
+
                  const cardContent = `
                     <div class="card p-6 rounded-lg text-center">
                         ${ratingHTML}
@@ -324,16 +333,13 @@
                                 <h3 class="text-2xl font-orbitron font-bold mb-2 text-green-300">${gameData.title || 'Spiel wird geladen...'}</h3>
                                 <p class="text-gray-400 mb-4 h-24 overflow-hidden text-ellipsis">${gameData.description || ''}</p>
                              </div>
-                             <span class="font-semibold text-green-400 hover:text-white transition-colors mt-auto cursor-default select-none">Details & Clips &rarr;</span>
+                             <span class="font-semibold text-green-400 hover:text-white transition-colors mt-auto cursor-default select-none">${linkText}</span>
                         </div>
                     </div>
                 `;
 
                 const wrapperClass = `card-link block h-full ${hiddenClass}`;
-                if (isClickable) {
-                    return `<a href="game.html?id=${gameId}" class="${wrapperClass}">${cardContent}</a>`;
-                }
-                return `<a href="game.html?id=${gameId}" class="${wrapperClass}">${cardContent}</a>`;
+                return `<a href="${linkUrl}" ${targetAttr} class="${wrapperClass}">${cardContent}</a>`;
             }
 
             onSnapshot(gamesCollection, (snapshot) => {
