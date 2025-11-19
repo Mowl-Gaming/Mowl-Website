@@ -131,13 +131,7 @@
                     <div class="relative">
                         <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
                         
-                        <!-- Platform Selection -->
-                        <div class="flex items-center space-x-4 mb-2">
-                             <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="platform-select" value="steam" class="custom-checkbox" checked><span>Steam</span></label>
-                             <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="platform-select" value="epic" class="custom-checkbox"><span>Epic Games</span></label>
-                             <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="platform-select" value="other" class="custom-checkbox"><span>Andere</span></label>
-                        </div>
-                        <p class="text-xs text-gray-500 mb-2">Tippe den Namen ein, um Vorschläge zu erhalten.</p>
+                        <p class="text-xs text-gray-500 mb-2">Suche via Steam oder gib eine URL ein.</p>
                         
                         <!-- Search Input & Dropdown Container -->
                         <div class="relative">
@@ -168,7 +162,6 @@
                         <thead class="border-b border-green-500/20">
                             <tr>
                                 <th class="p-4 font-orbitron">Titel</th>
-                                <th class="p-4 font-orbitron">Plattform</th>
                                 <th class="p-4 font-orbitron">Status</th>
                                 <th class="p-4 font-orbitron">Rating</th>
                                 <th class="p-4 font-orbitron">Kategorien</th>
@@ -241,11 +234,6 @@
              <textarea id="manual-desc" class="form-input w-full p-2 h-24" placeholder="Kurze Beschreibung..."></textarea>
              <input type="url" id="manual-image-url" class="form-input w-full p-2" placeholder="URL zum Header-Bild...">
              <input type="url" id="manual-game-url" class="form-input w-full p-2" placeholder="URL zur Shop-/Download-Seite...">
-             <select id="manual-platform" class="status-select w-full p-2 rounded">
-                 <option value="epic">Epic Games</option>
-                 <option value="steam">Steam</option>
-                 <option value="other">Andere</option>
-             </select>
              <button id="save-manual-game-btn" class="btn-cyber w-full py-2">Spiel speichern</button>
         </div>
     </div>
@@ -324,7 +312,6 @@
         const manualDesc = document.getElementById('manual-desc');
         const manualImageUrl = document.getElementById('manual-image-url');
         const manualGameUrl = document.getElementById('manual-game-url');
-        const manualPlatform = document.getElementById('manual-platform');
         const notificationModal = document.getElementById('notification-modal');
         const notificationText = document.getElementById('notification-text');
         const notificationOkBtn = document.getElementById('notification-ok-btn');
@@ -404,7 +391,6 @@
         }
 
         async function fetchSuggestions(term) {
-             // Show loading state in dropdown if needed, or just wait
              try {
                  const searchUrl = `https://store.steampowered.com/search/suggest?term=${encodeURIComponent(term)}&f=games&cc=DE&l=german`;
                  const content = await fetchViaProxy(searchUrl);
@@ -460,7 +446,6 @@
 
         // Standard Search / Add function (Modified to accept argument)
         async function handleAddGame(directUrl = null) {
-            // Check if called via button click or direct suggestion
             let urlOrName = "";
             
             if (typeof directUrl === 'string') {
@@ -469,10 +454,7 @@
                 urlOrName = gameInput.value.trim();
             }
 
-            const platformSelect = document.querySelector('input[name="platform-select"]:checked');
-            const platform = platformSelect ? platformSelect.value : 'other';
-            
-            if (!urlOrName) { addGameError.textContent = 'Bitte Spielnamen eingeben oder auswählen.'; return; }
+            if (!urlOrName) { addGameError.textContent = 'Bitte Spielnamen eingeben.'; return; }
             
             addGameBtn.disabled = true;
             addGameText.classList.add('hidden');
@@ -480,37 +462,23 @@
             addGameError.textContent = '';
             
             try {
-                if (platform === 'other' && !urlOrName.startsWith('http')) {
-                   throw new Error("Manuell");
-                }
-                
                 let gameUrl = urlOrName;
                 
-                // If input is NOT a URL, try to search (fallback if they clicked "Search" instead of suggestion)
+                // If input is NOT a URL, search Steam
                 if (!urlOrName.startsWith('http')) {
-                    if (platform === 'epic') {
-                        // Fallback for Epic manual entry trigger if typing generic name
-                        // But if they use the dropdown, we actually use Steam data regardless of platform selection
-                        // This is a UX choice: use Steam metadata for "Epic" games if available on Steam.
-                    }
-                    // Try Steam search if not direct URL
-                     gameUrl = await searchStore(urlOrName, 'steam');
+                     gameUrl = await searchStore(urlOrName);
                 }
                 
                 if (gamesData.some(game => game.url === gameUrl)) throw new Error('Dieses Spiel wurde bereits hinzugefügt.');
 
-                // Fetch metadata (always uses Steam logic if it's a Steam URL, even if platform is Epic)
-                // Use 'steam' parser if URL is steam, otherwise platform
-                const parserPlatform = gameUrl.includes('steampowered.com') ? 'steam' : platform;
-                
-                const { tags, title, description, image } = await fetchAndParseStorePage(gameUrl, parserPlatform);
+                const { tags, title, description, image } = await fetchAndParseStorePage(gameUrl);
                 
                 await addDoc(collection(db, "upcoming-games"), { 
-                    url: gameUrl, title, description, image, tags, status: 'upcoming', platform, createdAt: serverTimestamp(), rating: null, comment: "", medalClips: []
+                    url: gameUrl, title, description, image, tags, status: 'upcoming', platform: 'steam', createdAt: serverTimestamp(), rating: null, comment: "", medalClips: []
                 });
                 
                 gameInput.value = '';
-                suggestionsDropdown.classList.add('hidden'); // Ensure hidden
+                suggestionsDropdown.classList.add('hidden');
                 showNotification(`"${title}" erfolgreich hinzugefügt!`);
 
             } catch (error) {
@@ -520,7 +488,6 @@
                 manualDesc.value = '';
                 manualImageUrl.value = '';
                 manualGameUrl.value = (urlOrName.startsWith('http')) ? urlOrName : '';
-                manualPlatform.value = platform;
                 manualAddModal.classList.remove('hidden');
             } finally {
                 addGameBtn.disabled = false;
@@ -529,24 +496,20 @@
             }
         }
 
-        async function searchStore(gameName, platform) {
-            if (platform === 'steam') {
-                const searchUrl = `https://store.steampowered.com/search/suggest?term=${encodeURIComponent(gameName)}&f=games&cc=DE&l=german`;
-                const content = await fetchViaProxy(searchUrl);
-                const dummyDiv = document.createElement('div');
-                dummyDiv.innerHTML = content;
-                const firstLink = dummyDiv.querySelector('a');
-                if (!firstLink || !firstLink.getAttribute('data-ds-appid')) {
-                     throw new Error(`Kein Spiel namens "${gameName}" auf Steam gefunden.`);
-                }
-                const appId = firstLink.getAttribute('data-ds-appid');
-                return `https://store.steampowered.com/app/${appId}/`;
-            } 
-            // Epic fallback not implemented for search
-            throw new Error("Suche fehlgeschlagen.");
+        async function searchStore(gameName) {
+            const searchUrl = `https://store.steampowered.com/search/suggest?term=${encodeURIComponent(gameName)}&f=games&cc=DE&l=german`;
+            const content = await fetchViaProxy(searchUrl);
+            const dummyDiv = document.createElement('div');
+            dummyDiv.innerHTML = content;
+            const firstLink = dummyDiv.querySelector('a');
+            if (!firstLink || !firstLink.getAttribute('data-ds-appid')) {
+                    throw new Error(`Kein Spiel namens "${gameName}" auf Steam gefunden.`);
+            }
+            const appId = firstLink.getAttribute('data-ds-appid');
+            return `https://store.steampowered.com/app/${appId}/`;
         }
 
-        async function fetchAndParseStorePage(url, platform) {
+        async function fetchAndParseStorePage(url) {
             const htmlText = await fetchViaProxy(url);
             if (!htmlText) throw new Error('Leere Antwort vom Server.');
 
@@ -561,30 +524,22 @@
             const ogDesc = doc.querySelector('meta[property="og:description"]')?.content;
             const ogImage = doc.querySelector('meta[property="og:image"]')?.content;
 
-            if (platform === 'steam') {
-                if (ogTitle) rawTitle = ogTitle;
-                if (ogDesc) description = ogDesc;
-                if (ogImage) image = ogImage;
+            if (ogTitle) rawTitle = ogTitle;
+            if (ogDesc) description = ogDesc;
+            if (ogImage) image = ogImage;
 
-                doc.querySelectorAll('.app_tag').forEach(tagEl => {
-                    const tag = tagEl.textContent.trim().toLowerCase();
-                    if (['co-op', 'multiplayer', 'mehrspieler', 'ko-op', 'online co-op', 'lan co-op'].some(t => tag.includes(t))) tags.add('coop');
-                    if (['single-player', 'einzelspieler'].some(t => tag.includes(t))) tags.add('singleplayer');
-                });
-                
-                const priceEl = doc.querySelector('.game_purchase_price, .discount_final_price');
-                if (priceEl && !priceEl.textContent.toLowerCase().includes('free') && !priceEl.textContent.toLowerCase().includes('kostenlos')) {
-                    tags.add('not_free');
-                }
-                rawTitle = rawTitle.replace(/Sparen Sie \d+% bei /i, '').replace(/Save \d+% on /i, '').replace(/ bei Steam/i, '').replace(/ on Steam/i, '').trim();
-            } else if (platform === 'epic') {
-                if (doc.querySelector('title')) rawTitle = doc.querySelector('title').innerText;
-                if (ogTitle) rawTitle = ogTitle;
-                if (ogDesc) description = ogDesc;
-                if (ogImage) image = ogImage;
-                rawTitle = rawTitle.replace(/ \| Epic Games Store/i, '').trim();
+            doc.querySelectorAll('.app_tag').forEach(tagEl => {
+                const tag = tagEl.textContent.trim().toLowerCase();
+                if (['co-op', 'multiplayer', 'mehrspieler', 'ko-op', 'online co-op', 'lan co-op'].some(t => tag.includes(t))) tags.add('coop');
+                if (['single-player', 'einzelspieler'].some(t => tag.includes(t))) tags.add('singleplayer');
+            });
+            
+            const priceEl = doc.querySelector('.game_purchase_price, .discount_final_price');
+            if (priceEl && !priceEl.textContent.toLowerCase().includes('free') && !priceEl.textContent.toLowerCase().includes('kostenlos')) {
+                tags.add('not_free');
             }
-
+            rawTitle = rawTitle.replace(/Sparen Sie \d+% bei /i, '').replace(/Save \d+% on /i, '').replace(/ bei Steam/i, '').replace(/ on Steam/i, '').trim();
+            
             return { tags: Array.from(tags), title: rawTitle, description, image };
         }
         
@@ -594,7 +549,7 @@
                 description: manualDesc.value.trim(),
                 image: manualImageUrl.value.trim(),
                 url: manualGameUrl.value.trim(),
-                platform: manualPlatform.value,
+                platform: 'steam',
                 tags: [],
                 status: 'upcoming',
                 createdAt: serverTimestamp(),
@@ -667,14 +622,8 @@
                 row.className = 'border-b border-gray-800';
                 const title = game.title || 'Unbekanntes Spiel';
                 
-                let platformIcon = '';
-                if (game.platform === 'steam') platformIcon = '<span class="text-blue-400">Steam</span>';
-                else if (game.platform === 'epic') platformIcon = '<span class="text-white">Epic</span>';
-                else platformIcon = '<span class="text-gray-400">Andere</span>';
-
                 row.innerHTML = `
                     <td class="p-4 font-bold">${title}</td>
-                    <td class="p-4">${platformIcon}</td>
                     <td class="p-4">
                         <select class="status-select p-2 rounded w-full">
                             <option value="upcoming" ${game.status === 'upcoming' ? 'selected' : ''}>Ausstehend</option>
@@ -926,15 +875,7 @@
                     suggestionsDropdown.classList.add('hidden');
                 }
             });
-
-            document.querySelectorAll('input[name="platform-select"]').forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    const input = document.getElementById('game-input');
-                    if (e.target.value === 'steam') input.placeholder = "Spielnamen tippen (z.B. 'Fort')...";
-                    else if (e.target.value === 'epic') input.placeholder = "Spielnamen tippen (Epic-Spiele via Steam suchen)...";
-                    else input.placeholder = "Spielname für manuelle Eingabe...";
-                });
-            });
+            // Removed Platform Select Listeners
 
             searchInput.addEventListener('input', renderGames);
 
