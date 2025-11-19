@@ -318,9 +318,18 @@
                  let targetAttr = "";
 
                  if (gameData.status === 'upcoming') {
-                    linkUrl = gameData.url || '#';
-                    linkText = "In Steam öffnen &rarr;";
-                    targetAttr = 'target="_blank" rel="noopener noreferrer"';
+                    const originalUrl = gameData.url || '';
+                    // Extract Steam App ID to create a steam:// link
+                    const steamMatch = originalUrl.match(/\/app\/(\d+)/);
+                    
+                    if (steamMatch && steamMatch[1]) {
+                        linkUrl = `steam://store/${steamMatch[1]}`;
+                        linkText = "In Steam App öffnen &rarr;";
+                    } else {
+                        linkUrl = originalUrl;
+                        linkText = "Zum Store &rarr;";
+                        targetAttr = 'target="_blank" rel="noopener noreferrer"';
+                    }
                  }
 
                  const cardContent = `
