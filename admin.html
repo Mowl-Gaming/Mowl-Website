@@ -96,20 +96,24 @@
         .suggestion-item:hover {
             background-color: rgba(74, 222, 128, 0.2);
         }
+
+        /* Sidebar Styles */
+        .sidebar-link {
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-link.active, .sidebar-link:hover {
+            background: rgba(74, 222, 128, 0.1);
+            border-left-color: #4ade80;
+            color: #4ade80;
+        }
     </style>
 </head>
-<body class="antialiased">
+<body class="antialiased h-screen flex overflow-hidden">
 
-    <!-- Header -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-lg">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="index.html" class="text-3xl font-bold font-orbitron text-glow-green cursor-pointer">MOWL</a>
-        </div>
-    </header>
-
-    <main class="w-full mt-24">
-        <!-- Login Section -->
-        <div id="login-section" class="w-full max-w-md mx-auto">
+    <!-- Login Section (Full Screen Overlay) -->
+    <div id="login-section" class="fixed inset-0 z-50 bg-[#0a0a1a] flex items-center justify-center w-full h-full">
+        <div class="w-full max-w-md p-8">
             <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg text-center">
                 <h1 class="text-3xl font-orbitron font-bold mb-6 text-glow-green">Admin Login</h1>
                 <input type="email" id="email-input" class="form-input w-full p-3 rounded mb-4 text-center" placeholder="E-Mail">
@@ -118,65 +122,90 @@
                 <p id="error-msg" class="text-red-500 mt-4 h-4"></p>
             </div>
         </div>
+    </div>
 
-        <!-- Dashboard Section (hidden by default) -->
-        <div id="dashboard-section" class="hidden w-full max-w-7xl container mx-auto p-6">
-            <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-3xl font-orbitron font-bold text-glow-green">Dashboard</h1>
-                    <button id="logout-btn" class="text-gray-400 hover:text-green-400 text-sm">Abmelden</button>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <div class="relative">
-                        <h2 class="text-xl font-orbitron mb-4">Neues Spiel hinzufügen</h2>
-                        
-                        <p class="text-xs text-gray-500 mb-2">Suche via Steam oder gib eine URL ein.</p>
-                        
-                        <!-- Search Input & Dropdown Container -->
-                        <div class="relative">
-                            <div class="flex items-center space-x-2">
-                                <input type="text" id="game-input" class="form-input w-full p-3 rounded" placeholder="Spielnamen tippen (z.B. 'Fort')..." autocomplete="off">
-                                <button id="add-game-btn" class="btn-cyber py-3 px-6 font-bold flex items-center justify-center shrink-0">
-                                    <span id="add-game-text">Suchen</span>
-                                    <div id="add-game-loader" class="loader hidden"></div>
-                                </button>
-                            </div>
-                            
-                            <!-- Dropdown -->
-                            <div id="suggestions-dropdown" class="absolute w-full left-0 top-full mt-1 bg-gray-900 border border-green-500/30 rounded-lg shadow-xl hidden">
-                                <!-- Suggestions will be injected here -->
-                            </div>
-                        </div>
-                        
-                        <p id="add-game-error" class="text-red-500 mt-2 h-4 text-sm"></p>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-orbitron mb-4">Spiele filtern</h2>
-                        <input type="search" id="search-input" class="form-input w-full p-3 rounded" placeholder="Spiele suchen...">
-                    </div>
-                </div>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-black/40 border-r border-green-500/20 hidden flex-col">
+        <div class="p-6 border-b border-green-500/20">
+            <a href="index.html" class="text-2xl font-bold font-orbitron text-glow-green">MOWL <span class="text-xs font-sans text-gray-400 align-top">Admin</span></a>
+        </div>
+        <nav class="flex-1 py-6 space-y-2">
+            <button onclick="switchView('list')" id="nav-list" class="sidebar-link active w-full text-left px-6 py-3 font-semibold flex items-center">
+                <span class="mr-3 text-xl">📋</span> Spiele verwalten
+            </button>
+            <button onclick="switchView('add')" id="nav-add" class="sidebar-link w-full text-left px-6 py-3 font-semibold flex items-center">
+                <span class="mr-3 text-xl">➕</span> Spiel hinzufügen
+            </button>
+        </nav>
+        <div class="p-6 border-t border-green-500/20">
+            <button id="logout-btn" class="text-gray-400 hover:text-white flex items-center transition-colors">
+                <span class="mr-2">🚪</span> Abmelden
+            </button>
+        </div>
+    </aside>
 
-                <div class="overflow-x-auto">
+    <!-- Main Content Area -->
+    <main id="dashboard-section" class="flex-1 bg-black/20 relative hidden overflow-hidden flex-col">
+        
+        <!-- View: Game List -->
+        <div id="view-list" class="flex-1 flex flex-col h-full p-8 overflow-hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-orbitron font-bold text-white">Spiele Übersicht</h1>
+                <div class="w-1/3">
+                    <input type="search" id="search-input" class="form-input w-full p-3 rounded" placeholder="Spiele filtern...">
+                </div>
+            </div>
+
+            <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 rounded-lg shadow-lg flex-1 overflow-hidden flex flex-col">
+                <div class="overflow-auto flex-1">
                     <table class="w-full text-left">
-                        <thead class="border-b border-green-500/20">
+                        <thead class="border-b border-green-500/20 bg-black/40 sticky top-0 backdrop-blur-md">
                             <tr>
                                 <th class="p-4 font-orbitron">Titel</th>
-                                <th class="p-4 font-orbitron">Status</th>
-                                <th class="p-4 font-orbitron">Rating</th>
+                                <th class="p-4 font-orbitron w-40">Status</th>
+                                <th class="p-4 font-orbitron w-32">Rating</th>
                                 <th class="p-4 font-orbitron">Kategorien</th>
                                 <th class="p-4 font-orbitron text-right">Aktionen</th>
                             </tr>
                         </thead>
                         <tbody id="games-table-body"></tbody>
                     </table>
-                      <p id="no-games-message" class="text-gray-600 text-center p-8 hidden">Keine Spiele gefunden.</p>
+                    <p id="no-games-message" class="text-gray-600 text-center p-12 hidden">Keine Spiele gefunden.</p>
                 </div>
             </div>
         </div>
+
+        <!-- View: Add Game -->
+        <div id="view-add" class="hidden h-full p-8 overflow-y-auto">
+            <div class="max-w-2xl mx-auto mt-12">
+                <div class="bg-black/30 backdrop-blur-lg border border-green-500/30 p-8 rounded-lg shadow-lg">
+                    <h1 class="text-3xl font-orbitron font-bold text-glow-green mb-2 text-center">Neues Spiel</h1>
+                    <p class="text-gray-400 text-center mb-8">Suche ein Spiel via Steam oder gib eine URL ein.</p>
+                    
+                    <div class="relative mb-8">
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="game-input" class="form-input w-full p-4 rounded text-lg" placeholder="Spielnamen tippen (z.B. 'Fort')..." autocomplete="off">
+                            <button id="add-game-btn" class="btn-cyber py-4 px-8 font-bold flex items-center justify-center shrink-0 text-lg">
+                                <span id="add-game-text">Suchen</span>
+                                <div id="add-game-loader" class="loader hidden"></div>
+                            </button>
+                        </div>
+                        <!-- Suggestions Dropdown -->
+                        <div id="suggestions-dropdown" class="absolute w-full left-0 top-full mt-1 bg-gray-900 border border-green-500/30 rounded-lg shadow-xl hidden z-50 max-h-60 overflow-y-auto"></div>
+                        <p id="add-game-error" class="text-red-500 mt-2 h-4 text-sm text-center"></p>
+                    </div>
+
+                    <div class="text-center text-sm text-gray-500 mt-8">
+                        <p>Hinweis: Die Suche nutzt die Steam-Datenbank für Informationen.</p>
+                        <p class="mt-1">Sollte ein Spiel nicht gefunden werden, kannst du es nach einer erfolglosen Suche manuell anlegen.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
-    <!-- Modals -->
+    <!-- Modals (Same as before) -->
     <div id="confirmation-modal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[70]">
         <div class="bg-gray-900/80 border border-red-500/50 p-8 rounded-lg text-center shadow-lg max-w-sm w-full mx-4">
             <p id="confirmation-text" class="mb-6 text-lg"></p>
@@ -267,12 +296,35 @@
         const db = getFirestore(app);
         
         const loginSection = document.getElementById('login-section');
+        const sidebar = document.getElementById('sidebar');
         const dashboardSection = document.getElementById('dashboard-section');
+        
         const emailInput = document.getElementById('email-input');
         const passwordInput = document.getElementById('password-input');
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const errorMsg = document.getElementById('error-msg');
+        
+        // View Switching
+        window.switchView = function(viewId) {
+            const listBtn = document.getElementById('nav-list');
+            const addBtn = document.getElementById('nav-add');
+            const listView = document.getElementById('view-list');
+            const addView = document.getElementById('view-add');
+
+            if (viewId === 'list') {
+                listBtn.classList.add('active');
+                addBtn.classList.remove('active');
+                listView.classList.remove('hidden');
+                addView.classList.add('hidden');
+            } else {
+                listBtn.classList.remove('active');
+                addBtn.classList.add('active');
+                listView.classList.add('hidden');
+                addView.classList.remove('hidden');
+            }
+        }
+
         const gameInput = document.getElementById('game-input');
         const suggestionsDropdown = document.getElementById('suggestions-dropdown');
         const addGameBtn = document.getElementById('add-game-btn');
@@ -339,11 +391,17 @@
         function handleAuthState(user) {
             if (user) {
                 loginSection.classList.add('hidden');
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex');
                 dashboardSection.classList.remove('hidden');
+                dashboardSection.classList.add('flex');
                 loadGames();
             } else {
                 loginSection.classList.remove('hidden');
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('flex');
                 dashboardSection.classList.add('hidden');
+                dashboardSection.classList.remove('flex');
                 if (gamesUnsubscribe) gamesUnsubscribe();
             }
         }
@@ -480,6 +538,9 @@
                 gameInput.value = '';
                 suggestionsDropdown.classList.add('hidden');
                 showNotification(`"${title}" erfolgreich hinzugefügt!`);
+                
+                // Switch back to list view after success
+                switchView('list');
 
             } catch (error) {
                 console.error("Error adding game:", error);
@@ -566,6 +627,7 @@
                 manualAddModal.classList.add('hidden');
                 gameInput.value = '';
                 showNotification("Spiel manuell gespeichert.");
+                switchView('list');
             } catch (error) {
                 showNotification("Fehler beim Speichern des Spiels.");
             }
@@ -875,7 +937,6 @@
                     suggestionsDropdown.classList.add('hidden');
                 }
             });
-            // Removed Platform Select Listeners
 
             searchInput.addEventListener('input', renderGames);
 
