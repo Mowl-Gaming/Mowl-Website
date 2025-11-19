@@ -444,17 +444,33 @@
             await signOut(auth);
         }
         
-       async function fetchViaProxy(url) {
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-            try {
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error(`Proxy Error: ${response.status}`);
-                const data = await response.json();
-                return data.contents;
-            } catch (e) {
-                console.warn("AllOrigins failed, trying fallback...");
-                 throw new Error("Proxy-Verbindung fehlgeschlagen. Die Seite blockiert den Zugriff.");
+        // Updated Robust Proxy Fetcher
+        async function fetchViaProxy(url) {
+            const proxies = [
+                {
+                    url: (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+                    transform: async (res) => await res.text() 
+                },
+                {
+                    url: (u) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
+                    transform: async (res) => {
+                        const json = await res.json();
+                        return json.contents;
+                    }
+                }
+            ];
+
+            for (const proxy of proxies) {
+                try {
+                    const res = await fetch(proxy.url(url));
+                    if (res.ok) {
+                        return await proxy.transform(res);
+                    }
+                } catch (e) {
+                    console.warn(`Proxy failed: ${proxy.url(url)}`, e);
+                }
             }
+            throw new Error("All proxies failed to fetch content.");
         }
         
         function handleSearchInputDebounced(e) {
